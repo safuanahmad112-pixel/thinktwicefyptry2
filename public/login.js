@@ -59,7 +59,7 @@ document.getElementById("signupBtn").addEventListener("click", async () => {
     return;
   }
 
-  const res = await fetch("http://localhost:3000/signup", {
+  const res = await fetch("/signup", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ fullname, email, password })
@@ -78,7 +78,7 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
   const password = document.getElementById("loginPassword").value;
   const remember = document.getElementById("rememberMe").checked;
 
-  const res = await fetch("http://localhost:3000/login", {
+  const res = await fetch("/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password })
@@ -160,7 +160,7 @@ document.getElementById("sendResetBtn").addEventListener("click", async () => {
       return;
     }
 
-    const res = await fetch("http://localhost:3000/check-email", {
+    const res = await fetch("/check-email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email })
@@ -205,7 +205,7 @@ document.getElementById("sendResetBtn").addEventListener("click", async () => {
     return;
   }
 
-  const res = await fetch("http://localhost:3000/reset-password", {
+  const res = await fetch("/reset-password", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
