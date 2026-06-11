@@ -21,11 +21,22 @@ const __dirname = path.dirname(__filename);
 
 app.use(express.static(path.join(__dirname, "public")));
 
-/* ===================== MYSQL (FIXED FOR RAILWAY) ===================== */
+/* ===================== DB SAFE INIT ===================== */
 
-let db;
+let db = null;
 
-try {
+function initDB() {
+  const required =
+    process.env.DB_HOST &&
+    process.env.DB_USER &&
+    process.env.DB_PASSWORD &&
+    process.env.DB_NAME;
+
+  if (!required) {
+    console.log("⚠️ DB ENV missing → running WITHOUT database");
+    return;
+  }
+
   db = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -37,19 +48,19 @@ try {
   });
 
   console.log("✅ MySQL pool created");
-} catch (err) {
-  console.log("❌ DB init error:", err);
 }
 
-/* test connection (non-fatal) */
-(async () => {
-  try {
-    await db.query("SELECT 1");
-    console.log("✅ MySQL Connected");
-  } catch (err) {
-    console.log("❌ MySQL NOT connected:", err.message);
+initDB();
+
+/* ===================== DB GUARD ===================== */
+
+function requireDB(res) {
+  if (!db) {
+    res.status(500).json({ error: "Database not connected" });
+    return false;
   }
-})();
+  return true;
+}
 
 /* ===================== HOME ===================== */
 
@@ -81,10 +92,7 @@ app.post("/api/analyze", async (req, res) => {
     let systemPrompt = "";
 
     if (aiMode === "chatgpt") {
-      systemPrompt = `
-You are a financial AI assistant.
-Respond in structured format only.
-`;
+      systemPrompt = `You are a financial AI assistant. Respond in structured format only.`;
     } else if (aiMode === "concept") {
       systemPrompt = `
 You are a strict analysis engine.
@@ -103,22 +111,25 @@ OUTPUT:
       systemPrompt = `You are a helpful AI assistant.`;
     }
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: prompt }
-        ],
-        temperature: aiMode === "concept" ? 0.6 : 0.3,
-        max_tokens: 2500
-      }),
-    });
+    const response = await globalThis.fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "llama-3.1-8b-instant",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt }
+          ],
+          temperature: aiMode === "concept" ? 0.6 : 0.3,
+          max_tokens: 2500
+        }),
+      }
+    );
 
     const data = await response.json();
     const result = data?.choices?.[0]?.message?.content;
@@ -138,6 +149,8 @@ OUTPUT:
 /* ===================== SIGNUP ===================== */
 
 app.post("/signup", async (req, res) => {
+  if (!requireDB(res)) return;
+
   try {
     const { fullname, email, password } = req.body;
 
@@ -149,7 +162,6 @@ app.post("/signup", async (req, res) => {
     );
 
     res.json({ message: "Account created successfully" });
-
   } catch (err) {
     res.status(400).json({ message: "Error creating account" });
   }
@@ -158,6 +170,8 @@ app.post("/signup", async (req, res) => {
 /* ===================== LOGIN ===================== */
 
 app.post("/login", async (req, res) => {
+  if (!requireDB(res)) return;
+
   const { email, password } = req.body;
 
   const [rows] = await db.query(
@@ -186,12 +200,17 @@ app.post("/login", async (req, res) => {
   });
 });
 
-/* ===================== FORGOT PASSWORD ===================== */
+/* ===================== CHECK EMAIL ===================== */
 
 app.post("/check-email", async (req, res) => {
+  if (!requireDB(res)) return;
+
   const { email } = req.body;
 
-  const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
+  const [rows] = await db.query(
+    "SELECT * FROM users WHERE email = ?",
+    [email]
+  );
 
   if (!rows.length) {
     return res.json({ exists: false });
@@ -211,6 +230,8 @@ app.post("/check-email", async (req, res) => {
 /* ===================== RESET PASSWORD ===================== */
 
 app.post("/reset-password", async (req, res) => {
+  if (!requireDB(res)) return;
+
   const { email, token, newPassword } = req.body;
 
   const [rows] = await db.query(
@@ -240,7 +261,7 @@ app.post("/reset-password", async (req, res) => {
   res.json({ success: true, message: "Password updated" });
 });
 
-/* ===================== START SERVER (RAILWAY FIX) ===================== */
+/* ===================== START SERVER ===================== */
 
 const PORT = process.env.PORT || 3000;
 
