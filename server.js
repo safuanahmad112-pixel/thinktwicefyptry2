@@ -21,22 +21,22 @@ const __dirname = path.dirname(__filename);
 
 app.use(express.static(path.join(__dirname, "public")));
 
-/* ===================== DB SAFE INIT ===================== */
+/* ===================== ENV CHECK ===================== */
+
+const requiredEnv = ["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME"];
+
+const missingEnv = requiredEnv.filter((key) => !process.env[key]);
+
+if (missingEnv.length > 0) {
+  console.log("⚠️ Missing ENV:", missingEnv.join(", "));
+  console.log("❌ DB will NOT work until env is fixed in Railway");
+}
+
+/* ===================== MYSQL ===================== */
 
 let db = null;
 
-function initDB() {
-  const required =
-    process.env.DB_HOST &&
-    process.env.DB_USER &&
-    process.env.DB_PASSWORD &&
-    process.env.DB_NAME;
-
-  if (!required) {
-    console.log("⚠️ DB ENV missing → running WITHOUT database");
-    return;
-  }
-
+if (missingEnv.length === 0) {
   db = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -50,19 +50,19 @@ function initDB() {
   console.log("✅ MySQL pool created");
 }
 
-initDB();
-
-/* ===================== DB GUARD ===================== */
+/* ===================== DB SAFETY WRAPPER ===================== */
 
 function requireDB(res) {
   if (!db) {
-    res.status(500).json({ error: "Database not connected" });
+    res.status(500).json({
+      error: "Database not configured. Check Railway ENV variables.",
+    });
     return false;
   }
   return true;
 }
 
-/* ===================== HOME ===================== */
+/* ===================== START PAGE ===================== */
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
@@ -95,7 +95,7 @@ app.post("/api/analyze", async (req, res) => {
       systemPrompt = `You are a financial AI assistant. Respond in structured format only.`;
     } else if (aiMode === "concept") {
       systemPrompt = `
-You are a strict analysis engine.
+Strict analysis engine:
 
 ${combinations.map(c => `ROLE: ${c.role}\nMODE: ${c.mode}\n---`).join("\n")}
 
@@ -126,7 +126,7 @@ OUTPUT:
             { role: "user", content: prompt }
           ],
           temperature: aiMode === "concept" ? 0.6 : 0.3,
-          max_tokens: 2500
+          max_tokens: 2500,
         }),
       }
     );
@@ -135,7 +135,10 @@ OUTPUT:
     const result = data?.choices?.[0]?.message?.content;
 
     if (!result) {
-      return res.status(500).json({ error: "No AI response", raw: data });
+      return res.status(500).json({
+        error: "No AI response",
+        raw: data,
+      });
     }
 
     res.json({ result });
@@ -184,6 +187,7 @@ app.post("/login", async (req, res) => {
   }
 
   const user = rows[0];
+
   const valid = await bcrypt.compare(password, user.password);
 
   if (!valid) {
