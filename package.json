@@ -1,0 +1,23 @@
+{
+  "type": "module",
+
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "crypto": "^1.0.1",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "groq-sdk": "^1.2.0",
+    "mysql2": "^3.22.4",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "browser-sync": "^3.0.4"
+  }
+}

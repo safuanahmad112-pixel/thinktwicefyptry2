@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Help Center | Concept Breaker</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0f0f0f;
+  color: #eaeaea;
+  display: flex;
+  justify-content: center;
+}
+
+/* CONTAINER */
+.container {
+  max-width: 900px;
+  padding: 40px 20px;
+}
+
+/* HEADER */
+.header {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.header h1 {
+  font-size: 34px;
+  color: #ff4c2e;
+  margin: 0;
+}
+
+.subtitle {
+  color: #aaa;
+  margin-top: 6px;
+}
+
+/* SEARCH BAR */
+.search-box {
+  margin: 20px auto;
+  max-width: 500px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #333;
+  background: #1a1a1a;
+  color: white;
+  outline: none;
+}
+
+.search-box input:focus {
+  border-color: #ff4c2e;
+}
+
+/* GRID */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+/* CARD */
+.card {
+  background: #1a1a1a;
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  border-color: #ff4c2e;
+}
+
+.card h2 {
+  color: #ff4c2e;
+  font-size: 18px;
+  margin-top: 0;
+}
+
+/* FAQ */
+.faq {
+  margin-top: 10px;
+}
+
+.faq p {
+  margin: 6px 0;
+  color: #ccc;
+  line-height: 1.5;
+}
+
+/* CONTACT */
+.contact {
+  text-align: center;
+  margin-top: 30px;
+  background: #1a1a1a;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.contact a {
+  color: #ff4c2e;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+/* BACK BUTTON */
+footer {
+  text-align: center;
+  margin-top: 25px;
+}
+
+footer a {
+  color: #ff4c2e;
+  text-decoration: none;
+  padding: 10px 16px;
+  border: 1px solid #ff4c2e;
+  border-radius: 10px;
+  display: inline-block;
+  transition: 0.2s;
+}
+
+footer a:hover {
+  background: #ff4c2e;
+  color: black;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+  <header class="header">
+    <h1>Help Center</h1>
+    <p class="subtitle">How can we help you?</p>
+  </header>
+
+  <!-- SEARCH -->
+  <div class="search-box">
+    <input type="text" placeholder="Search help articles...">
+  </div>
+
+  <!-- CATEGORIES -->
+  <div class="grid">
+
+    <div class="card">
+      <h2>⚙️ Getting Started</h2>
+      <div class="faq">
+        <p>• How to use Concept Breaker?</p>
+        <p>• How AI analysis works?</p>
+        <p>• Choosing roles & modes</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🤖 AI Features</h2>
+      <div class="faq">
+        <p>• What is “Critic Mode”?</p>
+        <p>• How scoring works</p>
+        <p>• Improving your ideas</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🎨 Settings</h2>
+      <div class="faq">
+        <p>• Changing theme</p>
+        <p>• Language options</p>
+        <p>• Search feature</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔒 Privacy & Safety</h2>
+      <div class="faq">
+        <p>• Data handling</p>
+        <p>• User privacy</p>
+        <p>• Reporting issues</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CONTACT -->
+  <div class="contact">
+    <h2>Still need help?</h2>
+    <p>Contact us at</p>
+    <a href="mailto:support@conceptbreaker.ai">support@conceptbreaker.ai</a>
+  </div>
+
+  <footer>
+    <a href="try2.html">← Back to App</a>
+  </footer>
+
+</div>
+
+</body>
+</html>

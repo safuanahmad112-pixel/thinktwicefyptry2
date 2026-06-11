@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ThinkTwice Login</title>
+
+<link rel="stylesheet" href="login.css">
+
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+/>
+
+</head>
+<body class="dark-mode">
+
+<div class="container">
+
+  <!-- LEFT SIDE -->
+  <div class="left-panel">
+
+    <!-- LOGO -->
+    <div class="top-logo">
+
+      <img src="images/thinktwice-logo.png" alt="logo">
+
+      <h2>
+        Think<span>Twice</span>
+      </h2>
+
+    </div>
+
+    <!-- TEXT -->
+    <div class="hero-text">
+
+      <p class="welcome">Welcome to</p>
+
+      <h1>
+        Think<span>Twice</span>
+      </h1>
+
+      <p class="desc">
+        Your AI-powered decision partner that challenges your
+        ideas from every angle.
+      </p>
+
+    </div>
+
+    <!-- FEATURES -->
+    <div class="features">
+
+      <div class="feature">
+        <div class="icon">
+          <i class="fa-regular fa-message"></i>
+        </div>
+
+        <div>
+          <h3>Challenge Your Ideas</h3>
+          <p>Get balanced perspectives and critical analysis</p>
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="icon">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+
+        <div>
+          <h3>Make Better Decisions</h3>
+          <p>Identify risks and strengthen your plans</p>
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="icon">
+          <i class="fa-solid fa-chart-line"></i>
+        </div>
+
+        <div>
+          <h3>Grow Smarter</h3>
+          <p>Learn from feedback and improve continuously</p>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- RIGHT SIDE -->
+  <div class="right-panel">
+
+    <!-- DARK BUTTON -->
+    <button class="theme-btn" onclick="toggleTheme()">
+
+      <i class="fa-solid fa-moon" id="themeIcon"></i>
+
+      <span id="themeText">
+        Dark
+      </span>
+
+    </button>
+
+    <!-- LOGIN CARD -->
+    <div class="login-card">
+
+      <img
+        src="images/thinktwice-logo.png"
+        alt="logo"
+        class="card-logo"
+      >
+
+      <h2>Sign In</h2>
+
+      <p class="login-text">
+        Welcome back! Please sign in to continue.
+      </p>
+
+      <!-- EMAIL -->
+      <div class="input-box">
+        <i class="fa-regular fa-envelope"></i>
+
+        <input
+          type="email"
+          placeholder="Email address"
+        >
+      </div>
+
+      <!-- PASSWORD -->
+      <div class="input-box">
+        <i class="fa-solid fa-lock"></i>
+
+        <input
+          type="password"
+          placeholder="Password"
+          id="loginPassword"
+        >
+
+        <i class="fa-regular fa-eye" id="loginToggle"></i>
+      </div>
+
+      <!-- OPTIONS -->
+      <div class="options">
+
+        <label>
+          <input type="checkbox" id="rememberMe">
+          Remember me
+        </label>
+
+        <a href="#" onclick="openForgotModal()">
+          Forgot password?
+        </a>
+
+      </div>
+
+      <!-- BUTTON -->
+      <button class="signin-btn" id="loginBtn">
+        Sign In
+      </button>
+
+      <!-- SIGNUP -->
+      <p class="signup-text">
+        Don't have an account?
+        <a href="#" onclick="openSignupModal()">
+          Sign up here
+        </a>
+      </p>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ========================= -->
+<!-- FORGOT PASSWORD MODAL -->
+<!-- ========================= -->
+
+<div class="modal-overlay" id="forgotModal">
+
+  <div class="modal-box">
+
+    <!-- CLOSE -->
+    <button class="close-modal" onclick="closeForgotModal()">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+
+    <!-- TITLE -->
+    <h2>Reset Password</h2>
+
+    <p class="modal-text">
+      Enter your email to receive a password reset link.
+    </p>
+
+    <!-- EMAIL -->
+    <div class="input-box">
+      <i class="fa-regular fa-envelope"></i>
+
+      <input
+        type="email"
+        placeholder="Email address"
+      >
+    </div>
+
+    <!-- BUTTON -->
+    <button class="signin-btn" id="sendResetBtn">
+      Verify Email
+    </button>
+
+    <div class="input-box" id="newPasswordBox" style="display:none; margin-top:12px;">
+      <i class="fa-solid fa-lock"></i>
+
+      <input type="password" id="newPassword" placeholder="New Password">
+
+      <i class="fa-regular fa-eye" id="toggleNewPassword"></i>
+    </div>
+
+    <div class="input-box" id="confirmNewPasswordBox" style="display:none; margin-top:12px;">
+      <i class="fa-solid fa-lock"></i>
+
+      <input type="password" id="confirmNewPassword" placeholder="Confirm Password">
+
+      <i class="fa-regular fa-eye" id="toggleConfirmNewPassword"></i>
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<!-- ========================= -->
+<!-- SIGN UP MODAL -->
+<!-- ========================= -->
+
+<div class="modal-overlay" id="signupModal">
+
+  <div class="modal-box signup-modal">
+
+    <!-- CLOSE -->
+    <button class="close-modal" onclick="closeSignupModal()">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+
+    <!-- TITLE -->
+    <h2>Create Account</h2>
+
+    <p class="modal-text">
+      Join ThinkTwice today.
+    </p>
+
+    <!-- FULL NAME -->
+    <div class="input-box">
+      <i class="fa-regular fa-user"></i>
+
+      <input
+        type="text"
+        placeholder="Full Name"
+      >
+    </div>
+
+    <!-- EMAIL -->
+    <div class="input-box">
+      <i class="fa-regular fa-envelope"></i>
+
+      <input
+        type="email"
+        placeholder="Email address"
+      >
+    </div>
+
+    <!-- PASSWORD -->
+    <div class="input-box">
+      <i class="fa-solid fa-lock"></i>
+
+      <input
+        type="password"
+        placeholder="Password"
+        id="signupPassword"
+      >
+
+      <i class="fa-regular fa-eye" id="signupToggle"></i>
+    </div>
+
+    <!-- CONFIRM PASSWORD -->
+    <div class="input-box">
+      <i class="fa-solid fa-lock"></i>
+
+      <input
+        type="password"
+        placeholder="Confirm Password"
+        id="confirmPassword"
+      >
+
+      <i class="fa-regular fa-eye" id="confirmToggle"></i>
+    </div>
+
+    <!-- BUTTON -->
+    <button class="signin-btn" id="signupBtn">
+      Create Account
+    </button>
+
+  </div>
+
+</div>
+<script src="login.js"></script>
+</body>
+</html>

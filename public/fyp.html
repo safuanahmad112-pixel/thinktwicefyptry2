@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ThinkTwice</title>
+  <link rel="stylesheet" href="fyp.css">
+</head>
+<body>
+
+<!-- SETTINGS ICON -->
+<div id="menuToggle" class="menu-icon">⚙️</div>
+
+<!-- SIDEBAR -->
+<aside id="sidebar" class="sidebar">
+
+<button class="logout-btn" onclick="window.location.href='login.html'">
+  <i class="fa-solid fa-right-from-bracket"></i>
+  <span>Logout</span>
+</button>
+
+  <h2>Settings</h2>
+
+  <ul class="menu">
+
+    <li id="themeBtn">🎨 Theme</li>
+    <hr>
+    <li id="searchBtn">🔍 Search</li>
+    <hr>
+
+    <li onclick="location.href='privacypolicy.html'">
+      🔒 Privacy & Policy
+    </li>
+    <hr>
+
+    <!-- HELP -->
+    <li id="helpBtn">❓ Help Center</li>
+    <hr>
+
+    <li id="langBtn">🌐 Language</li>
+
+  </ul>
+
+  <hr>
+
+  <p>
+  Adjust your settings to control how ideas are processed, challenged, and deconstructed by the system, allowing you to fully shape the intensity and style of every analysis.
+</p>
+
+<div class="sidebar-footer">
+  <button id="newChatBtn" class="new-chat-btn">
+    ➕ New Chat
+  </button>
+</div>
+
+  <!-- HELP DROPDOWN (separate from UL for cleaner UI) -->
+  <div id="helpDropdown" class="help-dropdown">
+
+    <a>
+      <span class="icon">🚨</span>
+      Report center
+    </a>
+
+    <a onclick="location.href='hc.html'">
+      <span class="icon">❓</span>
+      Help center
+    </a>
+
+    <a onclick="location.href='/backend2/public/rn.html'">
+      <span class="icon">📝</span>
+      Release notes
+    </a>
+
+    <a href="#">
+      <span class="icon">📥</span>
+      Download apps
+    </a>
+
+    <div class="help-divider"></div>
+
+    <a onclick="location.href=tos.html'">
+      <span class="icon">📄</span>
+      Terms of Service
+    </a>
+
+  </div>
+
+  <!-- LANGUAGE DROPDOWN -->
+  <div id="langDropdown" class="lang-dropdown">
+    <button data-lang="en">🇺🇸 English</button>
+    <button data-lang="ms">🇲🇾 Malaysia</button>
+    <button data-lang="in">🇮🇳 India</button>
+    <button data-lang="zh">🇨🇳 Chinese</button>
+  </div>
+</aside>
+
+<!-- THEME PANEL -->
+<div id="themePanel" class="theme-panel">
+  <h3>Choose Theme</h3>
+
+  <div class="theme-grid">
+
+  <button 
+    class="theme-btn"
+    style="background: linear-gradient(to right, #000000, #00c853);"
+    data-gradient="linear-gradient(135deg, #000000, #00c853)">
+    Green
+  </button>
+
+  <button 
+    class="theme-btn"
+    style="background: linear-gradient(to right, #000000, #2962ff);"
+    data-gradient="linear-gradient(135deg, #000000, #2962ff)">
+    Blue
+  </button>
+
+  <button 
+    class="theme-btn"
+    style="background: linear-gradient(to right, #000000, #ff1744);"
+    data-gradient="linear-gradient(135deg, #000000, #ff1744)">
+    Red
+  </button>
+
+  <button 
+    class="theme-btn"
+    style="background: linear-gradient(to right, #000000, #ffffff);"
+    data-gradient="linear-gradient(135deg, #000000, #ffffff)">
+    White
+  </button>
+
+  <button 
+    class="theme-btn"
+    style="background: linear-gradient(to right, #000000, #ff69b4);"
+    data-gradient="linear-gradient(135deg, #000000, #ff69b4)">
+    Pink
+  </button>
+
+  <button 
+    class="theme-btn"
+    style="background: linear-gradient(to right, #000000, #ffd600);"
+    data-gradient="linear-gradient(135deg, #000000, #ffd600)">
+    Yellow
+  </button>
+
+  <button 
+    class="theme-btn"
+    style="background: linear-gradient(to right, #000000, #999999);"
+    data-gradient="linear-gradient(135deg, #000000, #999999)">
+    Black
+  </button>
+
+</div>
+</div>
+
+<!-- SEARCH MODAL -->
+<div id="searchModal" class="search-modal">
+  <div class="search-box">
+    <span id="closeSearch" class="close-search">✖</span>
+
+    <input
+      type="text"
+      id="searchInput"
+      placeholder="Search your question..."
+    />
+
+    <div id="searchResult"></div>
+  </div>
+</div>
+
+<!-- REPORT MODAL -->
+<div id="reportModal" class="report-modal">
+  <div class="report-box">
+
+    <h2>Report Conversation</h2>
+    <p>Select a reason:</p>
+
+    <div class="report-options">
+      <button class="report-option">Spam</button>
+      <button class="report-option">Harmful content</button>
+      <button class="report-option">False information</button>
+      <button class="report-option">Other</button>
+    </div>
+
+    <textarea placeholder="Describe the issue..."></textarea>
+
+    <div class="report-actions">
+      <button id="cancelReport" class="cancel-btn">Cancel</button>
+      <button class="submit-btn">Submit</button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- MAIN CONTENT -->
+<div class="container">
+  <div class="header">
+    <div class="logo">
+  <img src="images/thinktwice-logo.png" alt="ThinkTwice Logo">
+</div>
+    <h1>ThinkTwice</h1>
+    <p>YOUR IDEA WILL NOT SURVIVE THIS</p>
+    <p>TEST YOUR IDEAS. BREAK YOUR LIMITS.</p>
+  </div>
+
+  <h3 id="attackerTitle">CHOOSE YOUR ATTACKER</h3>
+
+  <div class="grid">
+    <div class="card active" onclick="selectRole(this, 'investor')">
+      <h2>📉 The Investor</h2>
+      <p>ROI & risk only</p>
+    </div>
+
+    <div class="card" onclick="selectRole(this, 'lawyer')">
+      <h2>⚖️ The Lawyer</h2>
+      <p>Legal & ethical holes</p>
+    </div>
+
+    <div class="card" onclick="selectRole(this, 'competitor')">
+      <h2>😤 The Competitor</h2>
+      <p>Attacks like a rival</p>
+    </div>
+
+    <div class="card" onclick="selectRole(this, 'traditional')">
+      <h2>👵 The Traditionalist</h2>
+      <p>Social & cultural gaps</p>
+    </div>
+  </div>
+
+  <h3 id="modeTitle">SELECT MODE</h3>
+
+  <div class="grid">
+    <div class="card mode-card active" onclick="selectMode(this, 'critic')">
+      <h2>😈 Critic</h2>
+      <p>Destroy argument</p>
+    </div>
+
+    <div class="card mode-card" onclick="selectMode(this, 'improve')">
+      <h2>🛠 Improve</h2>
+      <p>Make it stronger</p>
+    </div>
+
+    <div class="card mode-card" onclick="selectMode(this, 'pivot')">
+      <h2>🔄 Pivot</h2>
+      <p>New idea</p>
+    </div>
+
+    <div class="card mode-card" onclick="selectMode(this, 'score')">
+      <h2>📊 Score</h2>
+      <p>Rate idea</p>
+    </div>
+  </div>
+
+  <h3 id="pitchTitle">PITCH YOUR IDEA</h3>
+
+  <div class="textarea-wrapper">
+
+  <!-- LEFT + BUTTON -->
+  <label class="left-btn">
+    ＋
+    <input type="file" id="fileInput" hidden />
+
+  </label>
+
+  <button id="topBtn" class="top-btn">⬆</button>
+
+  <!-- TEXTAREA -->
+  <textarea id="idea" placeholder="Type your idea..."></textarea>
+
+  <!-- MODE BUTTON (NEW) -->
+  <button id="modeBtn" class="mode-btn">⚙️</button>
+  <div id="modePopup" class="mode-popup">
+
+  <button onclick="setAIMode('concept')">😈 Concept Breaker</button>
+  <button onclick="setAIMode('chatgpt')">🤖 AI Assistant</button>
+
+</div>
+
+  <!-- RIGHT MIC BUTTON -->
+  <button id="voiceBtn">🎤</button>
+
+</div>
+
+  <button id="analyzeBtn" onclick="analyze()">
+
+  <img
+    src="images/thinktwice-logo.png"
+    alt="ThinkTwice Logo"
+    class="analyze-logo"
+  >
+
+  ThinkTwice My Idea
+
+</button>
+
+  <div id="outputWrapper">
+
+    <div id="output"></div>
+
+    <div id="outputActions" class="output-actions">
+  <button onclick="copyOutput()">📋</button>
+  <button onclick="like()">👍</button>
+  <button onclick="dislike()">👎</button>
+  <button onclick="shareOutput()">🔗</button>
+</div>
+
+ <!-- FOLLOW UP BOX -->
+  <div id="followUpBox" class="followup-box">
+
+    <textarea
+      id="followUpInput"
+      placeholder="Ask another question..."
+    ></textarea>
+
+    <div class="followup-tools">
+
+  <!-- FILE -->
+  <label class="left-btn follow-left-btn">
+    ＋
+    <input type="file" id="followFileInput" hidden />
+  </label>
+
+  <button id="topBtnn" class="top-btnn">⬆</button>
+
+  <!-- MODE -->
+  <button id="followModeBtn" class="mode-btn">⚙️</button>
+
+  <!-- POPUP INSIDE -->
+  <div id="followModePopup" class="mode-popup">
+    <button onclick="setAIMode('concept')">
+      😈 Concept Breaker
+    </button>
+
+    <button onclick="setAIMode('chatgpt')">
+      🤖 AI Assistant
+    </button>
+  </div>
+
+  <!-- MIC -->
+  <button id="followVoiceBtn">🎤</button>
+
+</div>
+
+      </div>
+    </div>
+
+    <button id="followUpBtn">
+      ➤ Send
+    </button>
+
+    <button id="down-button">
+      ⬇ Latest
+    </button>
+
+  </div>
+</div>
+
+<script src="fyp.js" defer></script>
+</body>
+</html>
