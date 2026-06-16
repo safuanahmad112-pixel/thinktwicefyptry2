@@ -1,3 +1,5 @@
+const API_URL = window.location.origin;
+
 /* =========================
    MODALS
 ========================= */
@@ -30,13 +32,11 @@ function toggleTheme() {
   if (body.classList.contains("light-mode")) {
     body.classList.remove("light-mode");
     body.classList.add("dark-mode");
-
     themeText.innerText = "Dark";
     themeIcon.className = "fa-solid fa-moon";
   } else {
     body.classList.remove("dark-mode");
     body.classList.add("light-mode");
-
     themeText.innerText = "Light";
     themeIcon.className = "fa-solid fa-sun";
   }
@@ -59,7 +59,7 @@ document.getElementById("signupBtn").addEventListener("click", async () => {
     return;
   }
 
-  const res = await fetch("/signup", {
+  const res = await fetch(`${API_URL}/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ fullname, email, password })
@@ -70,7 +70,7 @@ document.getElementById("signupBtn").addEventListener("click", async () => {
 });
 
 /* =========================
-   LOGIN + REMEMBER ME
+   LOGIN
 ========================= */
 
 document.getElementById("loginBtn").addEventListener("click", async () => {
@@ -78,7 +78,7 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
   const password = document.getElementById("loginPassword").value;
   const remember = document.getElementById("rememberMe").checked;
 
-  const res = await fetch("/login", {
+  const res = await fetch(`${API_URL}/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password })
@@ -88,17 +88,17 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
 
   alert(data.message);
 
-  if (data.message === "Login successful") {
-  localStorage.setItem("user", JSON.stringify(data.user));
+  if (data.success) {
+    localStorage.setItem("user", JSON.stringify(data.user));
 
-  if (remember) {
-    localStorage.setItem("savedEmail", email);
-  } else {
-    localStorage.removeItem("savedEmail");
+    if (remember) {
+      localStorage.setItem("savedEmail", email);
+    } else {
+      localStorage.removeItem("savedEmail");
+    }
+
+    window.location.href = "fyp.html";
   }
-
-  window.location.href = "fyp.html";
-}
 });
 
 /* =========================
@@ -140,27 +140,20 @@ setupPasswordToggle("signupToggle", "signupPassword");
 setupPasswordToggle("confirmToggle", "confirmPassword");
 
 /* =========================
-   FORGOT PASSWORD FLOW
+   FORGOT PASSWORD
 ========================= */
 
 let resetToken = null;
-let step = 1; // 1 = check email, 2 = reset password
+let step = 1;
 
 document.getElementById("sendResetBtn").addEventListener("click", async () => {
 
   const email = document.querySelector("#forgotModal input[type='email']").value;
 
-  /* =========================
-     STEP 1: CHECK EMAIL
-  ========================= */
   if (step === 1) {
+    if (!email) return alert("Please enter email");
 
-    if (!email) {
-      alert("Please enter email");
-      return;
-    }
-
-    const res = await fetch("/check-email", {
+    const res = await fetch(`${API_URL}/check-email`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email })
@@ -168,44 +161,29 @@ document.getElementById("sendResetBtn").addEventListener("click", async () => {
 
     const data = await res.json();
 
-    if (data.exists) {
+    if (!data.exists) return alert("Email not found");
 
-      alert("Email verified. Enter new password.");
+    alert("Email verified. Enter new password.");
 
-      resetToken = data.token;
+    resetToken = data.token;
 
-      document.getElementById("newPasswordBox").style.display = "flex";
-      document.getElementById("confirmNewPasswordBox").style.display = "flex";
+    document.getElementById("newPasswordBox").style.display = "flex";
+    document.getElementById("confirmNewPasswordBox").style.display = "flex";
 
-      document.getElementById("sendResetBtn").innerText = "Update Password";
+    document.getElementById("sendResetBtn").innerText = "Update Password";
 
-      step = 2; // move to next step
-
-    } else {
-      alert("Email not found");
-    }
-
+    step = 2;
     return;
   }
-
-  /* =========================
-     STEP 2: RESET PASSWORD
-  ========================= */
 
   const newPassword = document.getElementById("newPassword").value;
   const confirmPassword = document.getElementById("confirmNewPassword").value;
 
-  if (!newPassword || !confirmPassword) {
-    alert("Please enter password");
-    return;
-  }
-
   if (newPassword !== confirmPassword) {
-    alert("Passwords do not match");
-    return;
+    return alert("Passwords do not match");
   }
 
-  const res = await fetch("/reset-password", {
+  const res = await fetch(`${API_URL}/reset-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -216,18 +194,15 @@ document.getElementById("sendResetBtn").addEventListener("click", async () => {
   });
 
   const data = await res.json();
-
   alert(data.message);
 
   if (data.success) {
     closeForgotModal();
 
-    // reset UI state
     step = 1;
     resetToken = null;
 
     document.getElementById("sendResetBtn").innerText = "Verify Email";
-
     document.getElementById("newPasswordBox").style.display = "none";
     document.getElementById("confirmNewPasswordBox").style.display = "none";
   }
