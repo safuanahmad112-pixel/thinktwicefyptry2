@@ -1,4 +1,5 @@
 const API_URL = window.location.origin;
+
 /* =========================
    MODALS
 ========================= */
@@ -60,7 +61,7 @@ document.getElementById("signupBtn").addEventListener("click", async () => {
     return;
   }
 
-  const res = await fetch("http://localhost:3000/signup", {
+  const res = await fetch(`${API_URL}/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ fullname, email, password })
@@ -71,7 +72,7 @@ document.getElementById("signupBtn").addEventListener("click", async () => {
 });
 
 /* =========================
-   LOGIN + REMEMBER ME
+   LOGIN
 ========================= */
 
 document.getElementById("loginBtn").addEventListener("click", async () => {
@@ -79,7 +80,7 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
   const password = document.getElementById("loginPassword").value;
   const remember = document.getElementById("rememberMe").checked;
 
-  const res = await fetch("http://localhost:3000/login", {
+  const res = await fetch(`${API_URL}/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password })
@@ -89,17 +90,17 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
 
   alert(data.message);
 
-  if (data.message === "Login successful") {
-  localStorage.setItem("user", JSON.stringify(data.user));
+  if (data.success) {
+    localStorage.setItem("user", JSON.stringify(data.user));
 
-  if (remember) {
-    localStorage.setItem("savedEmail", email);
-  } else {
-    localStorage.removeItem("savedEmail");
+    if (remember) {
+      localStorage.setItem("savedEmail", email);
+    } else {
+      localStorage.removeItem("savedEmail");
+    }
+
+    window.location.href = "fyp.html";
   }
-
-  window.location.href = "fyp.html";
-}
 });
 
 /* =========================
@@ -145,15 +146,13 @@ setupPasswordToggle("confirmToggle", "confirmPassword");
 ========================= */
 
 let resetToken = null;
-let step = 1; // 1 = check email, 2 = reset password
+let step = 1;
 
 document.getElementById("sendResetBtn").addEventListener("click", async () => {
 
   const email = document.querySelector("#forgotModal input[type='email']").value;
 
-  /* =========================
-     STEP 1: CHECK EMAIL
-  ========================= */
+  /* STEP 1 */
   if (step === 1) {
 
     if (!email) {
@@ -161,7 +160,7 @@ document.getElementById("sendResetBtn").addEventListener("click", async () => {
       return;
     }
 
-    const res = await fetch("http://localhost:3000/check-email", {
+    const res = await fetch(`${API_URL}/check-email`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email })
@@ -170,7 +169,6 @@ document.getElementById("sendResetBtn").addEventListener("click", async () => {
     const data = await res.json();
 
     if (data.exists) {
-
       alert("Email verified. Enter new password.");
 
       resetToken = data.token;
@@ -180,8 +178,7 @@ document.getElementById("sendResetBtn").addEventListener("click", async () => {
 
       document.getElementById("sendResetBtn").innerText = "Update Password";
 
-      step = 2; // move to next step
-
+      step = 2;
     } else {
       alert("Email not found");
     }
@@ -189,10 +186,7 @@ document.getElementById("sendResetBtn").addEventListener("click", async () => {
     return;
   }
 
-  /* =========================
-     STEP 2: RESET PASSWORD
-  ========================= */
-
+  /* STEP 2 */
   const newPassword = document.getElementById("newPassword").value;
   const confirmPassword = document.getElementById("confirmNewPassword").value;
 
@@ -206,7 +200,7 @@ document.getElementById("sendResetBtn").addEventListener("click", async () => {
     return;
   }
 
-  const res = await fetch("http://localhost:3000/reset-password", {
+  const res = await fetch(`${API_URL}/reset-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -223,7 +217,6 @@ document.getElementById("sendResetBtn").addEventListener("click", async () => {
   if (data.success) {
     closeForgotModal();
 
-    // reset UI state
     step = 1;
     resetToken = null;
 
