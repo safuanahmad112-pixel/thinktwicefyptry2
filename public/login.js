@@ -21,28 +21,6 @@ function closeSignupModal() {
 }
 
 /* =========================
-   THEME
-========================= */
-
-function toggleTheme() {
-  const body = document.body;
-  const themeText = document.getElementById("themeText");
-  const themeIcon = document.getElementById("themeIcon");
-
-  if (body.classList.contains("light-mode")) {
-    body.classList.remove("light-mode");
-    body.classList.add("dark-mode");
-    themeText.innerText = "Dark";
-    themeIcon.className = "fa-solid fa-moon";
-  } else {
-    body.classList.remove("dark-mode");
-    body.classList.add("light-mode");
-    themeText.innerText = "Light";
-    themeIcon.className = "fa-solid fa-sun";
-  }
-}
-
-/* =========================
    SIGNUP
 ========================= */
 
@@ -59,25 +37,14 @@ document.getElementById("signupBtn").addEventListener("click", async () => {
     return;
   }
 
-  try {
-    const res = await fetch(`${API_URL}/signup`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fullname, email, password })
-    });
+  const res = await fetch(`${API_URL}/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fullname, email, password })
+  });
 
-    const data = await res.json();
-    
-    if (data.success) {
-      alert(data.message);
-      closeSignupModal();
-    } else {
-      alert(data.message || "Signup failed");
-    }
-  } catch (err) {
-    alert("Error signing up");
-    console.error(err);
-  }
+  const data = await res.json();
+  alert(data.message);
 });
 
 /* =========================
@@ -89,31 +56,26 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
   const password = document.getElementById("loginPassword").value;
   const remember = document.getElementById("rememberMe").checked;
 
-  try {
-    const res = await fetch(`${API_URL}/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    });
+  const res = await fetch(`${API_URL}/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password })
+  });
 
-    const data = await res.json();
+  const data = await res.json();
 
-    if (data.success) {
-      localStorage.setItem("user", JSON.stringify(data.user));
+  alert(data.message);
 
-      if (remember) {
-        localStorage.setItem("savedEmail", email);
-      } else {
-        localStorage.removeItem("savedEmail");
-      }
+  if (data.success || data.message === "Login successful") {
+    localStorage.setItem("user", JSON.stringify(data.user));
 
-      window.location.href = "fyp.html";
+    if (remember) {
+      localStorage.setItem("savedEmail", email);
     } else {
-      alert(data.message);
+      localStorage.removeItem("savedEmail");
     }
-  } catch (err) {
-    alert("Error logging in");
-    console.error(err);
+
+    window.location.href = "fyp.html";
   }
 });
 
@@ -125,11 +87,8 @@ window.addEventListener("DOMContentLoaded", () => {
   const savedEmail = localStorage.getItem("savedEmail");
 
   if (savedEmail) {
-    const emailInput = document.querySelector(".login-card input[type='email']");
-    if (emailInput) {
-      emailInput.value = savedEmail;
-      document.getElementById("rememberMe").checked = true;
-    }
+    document.querySelector(".login-card input[type='email']").value = savedEmail;
+    document.getElementById("rememberMe").checked = true;
   }
 });
 
@@ -159,7 +118,7 @@ setupPasswordToggle("signupToggle", "signupPassword");
 setupPasswordToggle("confirmToggle", "confirmPassword");
 
 /* =========================
-   FORGOT PASSWORD
+   FORGOT PASSWORD FLOW
 ========================= */
 
 let resetToken = null;
@@ -170,19 +129,21 @@ document.getElementById("sendResetBtn").addEventListener("click", async () => {
   const email = document.querySelector("#forgotModal input[type='email']").value;
 
   if (step === 1) {
-    if (!email) return alert("Please enter email");
 
-    try {
-      const res = await fetch(`${API_URL}/check-email`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email })
-      });
+    if (!email) {
+      alert("Please enter email");
+      return;
+    }
 
-      const data = await res.json();
+    const res = await fetch(`${API_URL}/check-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
 
-      if (!data.exists) return alert("Email not found");
+    const data = await res.json();
 
+    if (data.exists) {
       alert("Email verified. Enter new password.");
 
       resetToken = data.token;
@@ -193,47 +154,50 @@ document.getElementById("sendResetBtn").addEventListener("click", async () => {
       document.getElementById("sendResetBtn").innerText = "Update Password";
 
       step = 2;
-    } catch (err) {
-      alert("Error verifying email");
-      console.error(err);
+    } else {
+      alert("Email not found");
     }
+
     return;
   }
 
   const newPassword = document.getElementById("newPassword").value;
   const confirmPassword = document.getElementById("confirmNewPassword").value;
 
-  if (newPassword !== confirmPassword) {
-    return alert("Passwords do not match");
+  if (!newPassword || !confirmPassword) {
+    alert("Please enter password");
+    return;
   }
 
-  try {
-    const res = await fetch(`${API_URL}/reset-password`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        token: resetToken,
-        newPassword
-      })
-    });
+  if (newPassword !== confirmPassword) {
+    alert("Passwords do not match");
+    return;
+  }
 
-    const data = await res.json();
-    alert(data.message);
+  const res = await fetch(`${API_URL}/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email,
+      token: resetToken,
+      newPassword
+    })
+  });
 
-    if (data.success) {
-      closeForgotModal();
+  const data = await res.json();
 
-      step = 1;
-      resetToken = null;
+  alert(data.message);
 
-      document.getElementById("sendResetBtn").innerText = "Verify Email";
-      document.getElementById("newPasswordBox").style.display = "none";
-      document.getElementById("confirmNewPasswordBox").style.display = "none";
-    }
-  } catch (err) {
-    alert("Error resetting password");
-    console.error(err);
+  if (data.success) {
+    closeForgotModal();
+
+    step = 1;
+    resetToken = null;
+
+    document.getElementById("sendResetBtn").innerText = "Verify Email";
+
+    document.getElementById("newPasswordBox").style.display = "none";
+    document.getElementById("confirmNewPasswordBox").style.display = "none";
   }
 });
 
