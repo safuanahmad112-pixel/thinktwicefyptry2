@@ -25,40 +25,27 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
-/* ===================== MYSQL (RAILWAY VERSION) ===================== */
+/* ===================== MYSQL (XAMPP LOCALHOST) ===================== */
 
-// Use Railway environment variables or fallback to localhost for development
-const dbConfig = {
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "thinktwice_db",
-  port: Number(process.env.DB_PORT) || 3306,
+// XAMPP default credentials
+const db = mysql.createPool({
+  host: "localhost",
+  user: "root",
+  password: "",  // XAMPP default is empty
+  database: "thinktwice_db",
+  port: 3306,
   waitForConnections: true,
   connectionLimit: 10,
-  ssl: process.env.DB_SSL === "true" ? {
-    rejectUnauthorized: false
-  } : undefined
-};
-
-console.log("🔌 Database Config:", {
-  host: dbConfig.host,
-  user: dbConfig.user,
-  database: dbConfig.database,
-  port: dbConfig.port,
-  ssl: dbConfig.ssl ? "Enabled" : "Disabled"
 });
-
-const db = mysql.createPool(dbConfig);
 
 // Test connection
 try {
   const connection = await db.getConnection();
-  console.log("✅ MySQL Connected Successfully!");
+  console.log("✅ MySQL Connected Successfully to XAMPP!");
   connection.release();
 } catch (err) {
   console.log("❌ MySQL Connection Error:", err.message);
-  console.log("⚠️ Please check your Railway environment variables");
+  console.log("⚠️ Make sure XAMPP is running and database 'thinktwice_db' exists");
 }
 
 /* ===================== API KEY ===================== */
@@ -208,6 +195,19 @@ app.post("/signup", async (req, res) => {
   try {
     const { fullname, email, password } = req.body;
 
+    // Check if user already exists
+    const [existing] = await db.query(
+      "SELECT * FROM users WHERE email = ?",
+      [email]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: "Email already registered" 
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await db.query(
@@ -223,7 +223,7 @@ app.post("/signup", async (req, res) => {
     console.error("Signup Error:", err);
     res.status(400).json({ 
       success: false,
-      message: "Email already exists" 
+      message: "Error creating account" 
     });
   }
 });
@@ -450,5 +450,5 @@ app.post("/action", async (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`✅ Server running on http://localhost:${PORT}`);
 });
