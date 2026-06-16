@@ -14,93 +14,76 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+/* ===================== MYSQL (PROMISE VERSION) ===================== */
+
+const db = mysql.createPool({
+  host: "localhost",
+  user: "root",
+  password: "",
+  database: "thinktwice_db",
+});
+
+try {
+  await db.query("SELECT 1");
+  console.log("✅ MySQL Connected");
+} catch (err) {
+  console.log("❌ MySQL Error:", err);
+}
+
 /* ===================== PATH ===================== */
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Serve static files (images, CSS, JS)
 app.use(express.static(path.join(__dirname, "public")));
 
-/* ===================== MYSQL ===================== */
-
-const db = mysql.createPool({
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "thinktwice_db",
-  port: Number(process.env.DB_PORT) || 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-});
-
-// Test connection
-try {
-  const connection = await db.getConnection();
-  console.log("✅ MySQL Connected Successfully!");
-  connection.release();
-} catch (err) {
-  console.log("❌ MySQL Connection Error:", err.message);
-}
-
-/* ===================== ROUTES FOR ALL PAGES ===================== */
-
-// Main pages
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
-app.get("/login", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "login.html"));
-});
+/* ===================== API KEY ===================== */
 
-app.get("/fyp", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "fyp.html"));
-});
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
-app.get("/plan", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "plan.html"));
-});
-
-app.get("/privacy", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "privacy.html"));
-});
-
-app.get("/tos", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "tos.html"));
-});
-
-app.get("/hc", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "hc.html"));
-});
-
-app.get("/rn", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "rn.html"));
-});
-
-// Privacy policy pages
-app.get("/privacypolicy", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "privacypolicy.html"));
-});
-
-app.get("/privacypolicies", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "privacypolicies.html"));
-});
-
-/* ===================== AI API ===================== */
+/* ===================== API ===================== */
 
 app.post("/api/analyze", async (req, res) => {
   try {
-    const { prompt, aiMode, roles = [], modes = [], singleMode = false } = req.body;
+    const {
+      prompt,
+      aiMode,
+      roles = [],
+      modes = [],
+      singleMode = false   // 🔥 NEW FEATURE
+    } = req.body;
 
-    const finalRoles = roles.length ? roles : ["Investor"];
-    const finalModes = modes.length ? modes : ["Critic"];
+    let systemPrompt = "";
+
+    /* ===================== CLEAN INPUT ===================== */
+
+    const finalRoles = Array.isArray(roles) && roles.length
+      ? roles
+      : ["Investor"];
+
+    const finalModes = Array.isArray(modes) && modes.length
+      ? modes
+      : ["Critic"];
+
+    /* ===================== COMBINATIONS ===================== */
 
     let combinations = [];
 
+    // 🔥 KEY LOGIC FIX
     if (singleMode) {
-      combinations = [{ role: finalRoles[0], mode: finalModes[0] }];
+      // ONLY ONE ROLE + ONE MODE
+      combinations = [
+        {
+          role: finalRoles[0],
+          mode: finalModes[0]
+        }
+      ];
     } else {
+      // MULTI COMBINATION MODE
       for (const r of finalRoles) {
         for (const m of finalModes) {
           combinations.push({ role: r, mode: m });
@@ -108,44 +91,90 @@ app.post("/api/analyze", async (req, res) => {
       }
     }
 
-    let systemPrompt = "";
+    /* ===================== CHATGPT MODE ===================== */
 
     if (aiMode === "chatgpt") {
-      systemPrompt = `You are a financial AI assistant. Respond in structured format only.`;
-    } else if (aiMode === "concept") {
       systemPrompt = `
-Strict analysis engine:
+You are a professional accounting and financial analysis AI assistant.
 
-${combinations.map(c => `ROLE: ${c.role}\nMODE: ${c.mode}\n---`).join("\n")}
+IMPORTANT RULES:
+- Respond ONLY in structured format
+- Do NOT add extra introduction or conclusion
+- Always include all sections
+- Be precise and analytical
+- Use numbers when possible
 
-OUTPUT:
-📊 SCORE
-⚠️ RISK
-🎯 VERDICT
-🧠 CRITICISM
-💡 INSIGHT
-🔥 FINAL THOUGHT
+OUTPUT FORMAT:
+
+📊 Financial Analysis
+🧮 Calculations
+📉 Interpretation
+⚠️ Risk / Issues
+✅ Recommendation
 `;
-    } else {
-      systemPrompt = `You are a helpful AI assistant.`;
     }
 
-    const response = await globalThis.fetch(
+    /* ===================== CONCEPT MODE ===================== */
+
+    else if (aiMode === "concept") {
+      systemPrompt = `
+You are a STRICT business analysis engine.
+
+RULES:
+- Follow ONLY given ROLE and MODE combinations
+- Do NOT merge roles or add extra text
+- Output must be structured exactly
+
+INPUT:
+${combinations.map(c => `ROLE: ${c.role}\nMODE: ${c.mode}\n---`).join("\n")}
+
+OUTPUT FORMAT:
+
+ROLE: <ROLE>
+MODE: <MODE>
+
+📊 SCORE: X/10
+⚠️ RISK: ...
+🎯 VERDICT: ...
+🧠 CRITICISM: ...
+💡 INSIGHT: ...
+🔥 FINAL THOUGHT: ...
+`;
+    }
+
+    /* ===================== DEFAULT ===================== */
+
+    else {
+      systemPrompt = `
+You are a helpful AI assistant.
+Provide clear, structured responses.
+`;
+    }
+
+    /* ===================== GROQ CALL ===================== */
+
+    const response = await fetch(
       "https://api.groq.com/openai/v1/chat/completions",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+          Authorization: `Bearer ${GROQ_API_KEY}`,
         },
         body: JSON.stringify({
           model: "llama-3.1-8b-instant",
           messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: prompt }
+            {
+              role: "system",
+              content: systemPrompt
+            },
+            {
+              role: "user",
+              content: prompt
+            }
           ],
           temperature: aiMode === "concept" ? 0.6 : 0.3,
-          max_tokens: 2500,
+          max_tokens: 2500
         }),
       }
     );
@@ -156,35 +185,27 @@ OUTPUT:
     if (!result) {
       return res.status(500).json({
         error: "No AI response",
-        raw: data,
+        raw: data
       });
     }
 
     res.json({ result });
 
   } catch (err) {
-    console.error("API ERROR:", err);
+    console.error("SERVER ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 });
+
+/* ===================== START SERVER ===================== */
+
+const PORT = process.env.PORT || 3000;
 
 /* ===================== SIGNUP ===================== */
 
 app.post("/signup", async (req, res) => {
   try {
     const { fullname, email, password } = req.body;
-
-    const [existing] = await db.query(
-      "SELECT * FROM users WHERE email = ?",
-      [email]
-    );
-
-    if (existing.length > 0) {
-      return res.status(400).json({ 
-        success: false,
-        message: "Email already registered" 
-      });
-    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -193,144 +214,192 @@ app.post("/signup", async (req, res) => {
       [fullname, email, hashedPassword]
     );
 
-    res.json({ 
-      success: true,
-      message: "Account created successfully" 
-    });
+    res.json({ message: "Account created successfully" });
   } catch (err) {
-    console.error("Signup Error:", err);
-    res.status(400).json({ 
-      success: false,
-      message: "Error creating account" 
-    });
+    res.status(400).json({ message: "Email already exists" });
   }
 });
 
 /* ===================== LOGIN ===================== */
 
 app.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
 
-    const [rows] = await db.query(
-      "SELECT * FROM users WHERE email = ?",
-      [email]
-    );
+  const [rows] = await db.query(
+    "SELECT * FROM users WHERE email = ?",
+    [email]
+  );
 
-    if (!rows.length) {
-      return res.json({ 
-        success: false,
-        message: "User not found" 
-      });
-    }
-
-    const user = rows[0];
-
-    const valid = await bcrypt.compare(password, user.password);
-
-    if (!valid) {
-      return res.json({ 
-        success: false,
-        message: "Wrong password" 
-      });
-    }
-
-    res.json({
-      success: true,
-      message: "Login successful",
-      user: {
-        id: user.id,
-        fullname: user.fullname,
-        email: user.email,
-      },
-    });
-  } catch (err) {
-    console.error("Login Error:", err);
-    res.status(500).json({ 
-      success: false,
-      message: "Server error" 
-    });
+  if (rows.length === 0) {
+    return res.json({ message: "User not found" });
   }
+
+  const user = rows[0];
+
+  const valid = await bcrypt.compare(password, user.password);
+
+  if (!valid) {
+    return res.json({ message: "Wrong password" });
+  }
+
+  res.json({
+    message: "Login successful",
+    user: {
+      id: user.id,
+      fullname: user.fullname,
+      email: user.email,
+    },
+  });
 });
 
-/* ===================== CHECK EMAIL ===================== */
+/* ===================== FORGOT PASSWORD STEP 1 ===================== */
+/* check email + create token */
 
 app.post("/check-email", async (req, res) => {
-  try {
-    const { email } = req.body;
+  const { email } = req.body;
 
-    const [rows] = await db.query(
-      "SELECT * FROM users WHERE email = ?",
-      [email]
-    );
+  const [rows] = await db.query(
+    "SELECT * FROM users WHERE email = ?",
+    [email]
+  );
 
-    if (!rows.length) {
-      return res.json({ exists: false });
-    }
-
-    const token = crypto.randomBytes(32).toString("hex");
-    const expiry = new Date(Date.now() + 15 * 60 * 1000);
-
-    await db.query(
-      "UPDATE users SET reset_token=?, reset_expiry=? WHERE email=?",
-      [token, expiry, email]
-    );
-
-    res.json({ exists: true, token });
-  } catch (err) {
-    console.error("Check Email Error:", err);
-    res.status(500).json({ error: "Server error" });
+  if (rows.length === 0) {
+    return res.json({ exists: false });
   }
+
+  const token = crypto.randomBytes(32).toString("hex");
+  const expiry = new Date(Date.now() + 15 * 60 * 1000);
+
+  await db.query(
+    "UPDATE users SET reset_token=?, reset_expiry=? WHERE email=?",
+    [token, expiry, email]
+  );
+
+  res.json({
+    exists: true,
+    token,
+  });
 });
 
 /* ===================== RESET PASSWORD ===================== */
 
 app.post("/reset-password", async (req, res) => {
+  const { email, token, newPassword } = req.body;
+
+  const [rows] = await db.query(
+    "SELECT * FROM users WHERE email=? AND reset_token=?",
+    [email, token]
+  );
+
+  if (rows.length === 0) {
+    return res.json({ success: false, message: "Invalid token" });
+  }
+
+  const user = rows[0];
+
+  if (new Date(user.reset_expiry) < new Date()) {
+    return res.json({ success: false, message: "Token expired" });
+  }
+
+  const hashed = await bcrypt.hash(newPassword, 10);
+
+  await db.query(
+    `UPDATE users 
+     SET password=?, reset_token=NULL, reset_expiry=NULL 
+     WHERE email=?`,
+    [hashed, email]
+  );
+
+  res.json({
+    success: true,
+    message: "Password updated successfully",
+  });
+});
+
+/* ===================== REPORT CONVERSATION ===================== */
+
+/* ===================== REPORT CONVERSATION ===================== */
+
+app.post("/report", async (req, res) => {
   try {
-    const { email, token, newPassword } = req.body;
 
-    const [rows] = await db.query(
-      "SELECT * FROM users WHERE email=? AND reset_token=?",
-      [email, token]
-    );
+    console.log("REPORT DATA:", req.body);
 
-    if (!rows.length) {
-      return res.json({ success: false, message: "Invalid token" });
+    const {
+      userId,
+      email,
+      reason,
+      description,
+      conversation,
+      reported_by
+    } = req.body;
+
+    if (!reason) {
+      return res.status(400).json({
+        success: false,
+        message: "Reason is required"
+      });
     }
 
-    const user = rows[0];
-
-    if (new Date(user.reset_expiry) < new Date()) {
-      return res.json({ success: false, message: "Token expired" });
-    }
-
-    const hashed = await bcrypt.hash(newPassword, 10);
-
-    await db.query(
-      `UPDATE users 
-       SET password=?, reset_token=NULL, reset_expiry=NULL 
-       WHERE email=?`,
-      [hashed, email]
+    const [result] = await db.query(
+      `
+      INSERT INTO reports
+      (
+        user_id,
+        email,
+        reason,
+        description,
+        conversation,
+        reported_by
+      )
+      VALUES (?, ?, ?, ?, ?, ?)
+      `,
+      [
+        userId || null,
+        email || "",
+        reason,
+        description || "",
+        conversation || "",
+        reported_by || "user"
+      ]
     );
 
-    res.json({ success: true, message: "Password updated" });
+    res.json({
+      success: true,
+      reportId: result.insertId,
+      message: "Report submitted successfully"
+    });
+
   } catch (err) {
-    console.error("Reset Password Error:", err);
-    res.status(500).json({ error: "Server error" });
+
+    console.error("REPORT ERROR:", err);
+    console.error("SQL MESSAGE:", err.sqlMessage);
+
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
   }
 });
 
-/* ===================== START SERVER ===================== */
+app.post("/action", async (req, res) => {
+  const { email, action_type, pdf_name, conversation } = req.body;
 
-const PORT = process.env.PORT || 3000;
+  try {
+    await db.query(
+      `INSERT INTO user_actions 
+      (email, action_type, pdf_name, conversation, created_at)
+      VALUES (?, ?, ?, ?, NOW())`,
+      [email, action_type, pdf_name, conversation]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: "DB insert failed" });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
-  console.log(`📊 Database: ${process.env.DB_HOST || 'localhost'}`);
-  console.log(`📄 Pages available:`);
-  console.log(`   - http://localhost:${PORT}/ (Login)`);
-  console.log(`   - http://localhost:${PORT}/fyp`);
-  console.log(`   - http://localhost:${PORT}/plan`);
-  console.log(`   - http://localhost:${PORT}/privacy`);
-  console.log(`   - http://localhost:${PORT}/tos`);
 });
