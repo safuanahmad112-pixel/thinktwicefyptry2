@@ -34,21 +34,16 @@ if (missingEnv.length > 0) {
 
 /* ===================== MYSQL ===================== */
 
-let db = null;
-
-if (missingEnv.length === 0) {
-  db = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT || 3306,
-    waitForConnections: true,
-    connectionLimit: 10,
-  });
-
-  console.log("✅ MySQL pool created");
-}
+// Replace the MySQL connection part with:
+const db = mysql.createPool({
+  host: "localhost",
+  user: "root",
+  password: "",
+  database: "thinktwice_db",
+  port: 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+});
 
 /* ===================== DB SAFETY WRAPPER ===================== */
 
