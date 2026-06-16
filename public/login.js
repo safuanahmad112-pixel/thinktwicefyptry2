@@ -64,19 +64,21 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
 
   const data = await res.json();
 
-alert(data.message);
+  const msg = data.message || data.error || "Unknown error";
+  alert(msg);
 
-if (data.success) {
-  localStorage.setItem("user", JSON.stringify(data.user));
+  if (data.user) {
+    localStorage.setItem("user", JSON.stringify(data.user));
 
-  if (remember) {
-    localStorage.setItem("savedEmail", email);
-  } else {
-    localStorage.removeItem("savedEmail");
+    if (remember) {
+      localStorage.setItem("savedEmail", email);
+    } else {
+      localStorage.removeItem("savedEmail");
+    }
+
+    window.location.href = "fyp.html";
   }
-
-  window.location.href = "fyp.html";
-}
+});
 
 /* =========================
    AUTO FILL EMAIL
