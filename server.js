@@ -33,14 +33,14 @@ const requiredEnv = [
   "DB_USER",
   "DB_PASSWORD",
   "DB_NAME",
-  "DB_PORT"
+  "DB_PORT",
+  "GROQ_API_KEY"
 ];
 
-const missingEnv = requiredEnv.filter((key) => !process.env[key]);
+const missingEnv = requiredEnv.filter(k => !process.env[k]);
 
 if (missingEnv.length > 0) {
   console.log("⚠️ Missing ENV:", missingEnv.join(", "));
-  console.log("❌ DB will NOT work until Railway ENV is fixed");
 }
 
 /* ===================== MYSQL ===================== */
@@ -61,13 +61,13 @@ if (missingEnv.length === 0) {
   console.log("✅ MySQL connected");
 }
 
-/* ===================== DB SAFETY ===================== */
+/* ===================== DB CHECK ===================== */
 
 function requireDB(res) {
   if (!db) {
     res.status(500).json({
       success: false,
-      message: "Database not configured (check Railway ENV variables)"
+      message: "Database not configured"
     });
     return false;
   }
@@ -104,7 +104,7 @@ app.post("/api/analyze", async (req, res) => {
     let systemPrompt = "";
 
     if (aiMode === "chatgpt") {
-      systemPrompt = `You are a financial AI assistant. Respond in structured format only.`;
+      systemPrompt = "You are a financial AI assistant.";
     } else if (aiMode === "concept") {
       systemPrompt = `
 Strict analysis engine:
@@ -120,28 +120,25 @@ OUTPUT:
 🔥 FINAL THOUGHT
 `;
     } else {
-      systemPrompt = `You are a helpful AI assistant.`;
+      systemPrompt = "You are a helpful AI assistant.";
     }
 
-    const response = await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "llama-3.1-8b-instant",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: prompt }
-          ],
-          temperature: aiMode === "concept" ? 0.6 : 0.3,
-          max_tokens: 2500,
-        }),
-      }
-    );
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-8b-instant",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: prompt }
+        ],
+        temperature: aiMode === "concept" ? 0.6 : 0.3,
+        max_tokens: 2500
+      })
+    });
 
     const data = await response.json();
     const result = data?.choices?.[0]?.message?.content;
@@ -149,15 +146,14 @@ OUTPUT:
     if (!result) {
       return res.status(500).json({
         success: false,
-        message: "No AI response",
-        raw: data
+        message: "No AI response"
       });
     }
 
     res.json({ success: true, result });
 
   } catch (err) {
-    console.error("AI ERROR:", err);
+    console.error(err);
     res.status(500).json({
       success: false,
       message: err.message
@@ -173,24 +169,17 @@ app.post("/signup", async (req, res) => {
   try {
     const { fullname, email, password } = req.body;
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashed = await bcrypt.hash(password, 10);
 
     await db.query(
       "INSERT INTO users(fullname, email, password) VALUES (?, ?, ?)",
-      [fullname, email, hashedPassword]
+      [fullname, email, hashed]
     );
 
-    res.json({
-      success: true,
-      message: "Account created successfully"
-    });
+    res.json({ success: true, message: "Account created" });
 
   } catch (err) {
-    console.error(err);
-    res.status(400).json({
-      success: false,
-      message: "Error creating account"
-    });
+    res.status(400).json({ success: false, message: "Signup error" });
   }
 });
 
@@ -199,49 +188,33 @@ app.post("/signup", async (req, res) => {
 app.post("/login", async (req, res) => {
   if (!requireDB(res)) return;
 
-  try {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
 
-    const [rows] = await db.query(
-      "SELECT * FROM users WHERE email = ?",
-      [email]
-    );
+  const [rows] = await db.query(
+    "SELECT * FROM users WHERE email=?",
+    [email]
+  );
 
-    if (!rows.length) {
-      return res.json({
-        success: false,
-        message: "User not found"
-      });
-    }
-
-    const user = rows[0];
-
-    const valid = await bcrypt.compare(password, user.password);
-
-    if (!valid) {
-      return res.json({
-        success: false,
-        message: "Wrong password"
-      });
-    }
-
-    return res.json({
-      success: true,
-      message: "Login successful",
-      user: {
-        id: user.id,
-        fullname: user.fullname,
-        email: user.email,
-      }
-    });
-
-  } catch (err) {
-    console.error("LOGIN ERROR:", err);
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+  if (!rows.length) {
+    return res.json({ success: false, message: "User not found" });
   }
+
+  const user = rows[0];
+  const ok = await bcrypt.compare(password, user.password);
+
+  if (!ok) {
+    return res.json({ success: false, message: "Wrong password" });
+  }
+
+  res.json({
+    success: true,
+    message: "Login successful",
+    user: {
+      id: user.id,
+      fullname: user.fullname,
+      email: user.email
+    }
+  });
 });
 
 /* ===================== CHECK EMAIL ===================== */
@@ -252,7 +225,7 @@ app.post("/check-email", async (req, res) => {
   const { email } = req.body;
 
   const [rows] = await db.query(
-    "SELECT * FROM users WHERE email = ?",
+    "SELECT * FROM users WHERE email=?",
     [email]
   );
 
@@ -284,19 +257,13 @@ app.post("/reset-password", async (req, res) => {
   );
 
   if (!rows.length) {
-    return res.json({
-      success: false,
-      message: "Invalid token"
-    });
+    return res.json({ success: false, message: "Invalid token" });
   }
 
   const user = rows[0];
 
   if (new Date(user.reset_expiry) < new Date()) {
-    return res.json({
-      success: false,
-      message: "Token expired"
-    });
+    return res.json({ success: false, message: "Token expired" });
   }
 
   const hashed = await bcrypt.hash(newPassword, 10);
@@ -308,16 +275,13 @@ app.post("/reset-password", async (req, res) => {
     [hashed, email]
   );
 
-  res.json({
-    success: true,
-    message: "Password updated"
-  });
+  res.json({ success: true, message: "Password updated" });
 });
 
-/* ===================== START SERVER ===================== */
+/* ===================== START ===================== */
 
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("✅ Server running on", PORT);
+  console.log("Server running on", PORT);
 });
