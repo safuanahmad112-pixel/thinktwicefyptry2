@@ -11,12 +11,7 @@ dotenv.config();
 
 const app = express();
 
-/* ===================== MIDDLEWARE ===================== */
-
-app.use(cors({
-  origin: "*"
-}));
-
+app.use(cors());
 app.use(express.json());
 
 /* ===================== PATH ===================== */
@@ -28,19 +23,13 @@ app.use(express.static(path.join(__dirname, "public")));
 
 /* ===================== ENV CHECK ===================== */
 
-const requiredEnv = [
-  "DB_HOST",
-  "DB_USER",
-  "DB_PASSWORD",
-  "DB_NAME",
-  "DB_PORT",
-  "GROQ_API_KEY"
-];
+const requiredEnv = ["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME"];
 
-const missingEnv = requiredEnv.filter(k => !process.env[k]);
+const missingEnv = requiredEnv.filter((key) => !process.env[key]);
 
 if (missingEnv.length > 0) {
   console.log("⚠️ Missing ENV:", missingEnv.join(", "));
+  console.log("❌ DB will NOT work until env is fixed in Railway");
 }
 
 /* ===================== MYSQL ===================== */
@@ -53,28 +42,27 @@ if (missingEnv.length === 0) {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port: Number(process.env.DB_PORT || 3306),
+    port: process.env.DB_PORT || 3306,
     waitForConnections: true,
     connectionLimit: 10,
   });
 
-  console.log("✅ MySQL connected");
+  console.log("✅ MySQL pool created");
 }
 
-/* ===================== DB CHECK ===================== */
+/* ===================== DB SAFETY WRAPPER ===================== */
 
 function requireDB(res) {
   if (!db) {
     res.status(500).json({
-      success: false,
-      message: "Database not configured"
+      error: "Database not configured. Check Railway ENV variables.",
     });
     return false;
   }
   return true;
 }
 
-/* ===================== HOME ===================== */
+/* ===================== START PAGE ===================== */
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
@@ -104,7 +92,7 @@ app.post("/api/analyze", async (req, res) => {
     let systemPrompt = "";
 
     if (aiMode === "chatgpt") {
-      systemPrompt = "You are a financial AI assistant.";
+      systemPrompt = `You are a financial AI assistant. Respond in structured format only.`;
     } else if (aiMode === "concept") {
       systemPrompt = `
 Strict analysis engine:
@@ -120,44 +108,44 @@ OUTPUT:
 🔥 FINAL THOUGHT
 `;
     } else {
-      systemPrompt = "You are a helpful AI assistant.";
+      systemPrompt = `You are a helpful AI assistant.`;
     }
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: prompt }
-        ],
-        temperature: aiMode === "concept" ? 0.6 : 0.3,
-        max_tokens: 2500
-      })
-    });
+    const response = await globalThis.fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "llama-3.1-8b-instant",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt }
+          ],
+          temperature: aiMode === "concept" ? 0.6 : 0.3,
+          max_tokens: 2500,
+        }),
+      }
+    );
 
     const data = await response.json();
     const result = data?.choices?.[0]?.message?.content;
 
     if (!result) {
       return res.status(500).json({
-        success: false,
-        message: "No AI response"
+        error: "No AI response",
+        raw: data,
       });
     }
 
-    res.json({ success: true, result });
+    res.json({ result });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    console.error("API ERROR:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -169,17 +157,16 @@ app.post("/signup", async (req, res) => {
   try {
     const { fullname, email, password } = req.body;
 
-    const hashed = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     await db.query(
       "INSERT INTO users(fullname, email, password) VALUES (?, ?, ?)",
-      [fullname, email, hashed]
+      [fullname, email, hashedPassword]
     );
 
-    res.json({ success: true, message: "Account created" });
-
+    res.json({ message: "Account created successfully" });
   } catch (err) {
-    res.status(400).json({ success: false, message: "Signup error" });
+    res.status(400).json({ message: "Error creating account" });
   }
 });
 
@@ -191,29 +178,29 @@ app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   const [rows] = await db.query(
-    "SELECT * FROM users WHERE email=?",
+    "SELECT * FROM users WHERE email = ?",
     [email]
   );
 
   if (!rows.length) {
-    return res.json({ success: false, message: "User not found" });
+    return res.json({ message: "User not found" });
   }
 
   const user = rows[0];
-  const ok = await bcrypt.compare(password, user.password);
 
-  if (!ok) {
-    return res.json({ success: false, message: "Wrong password" });
+  const valid = await bcrypt.compare(password, user.password);
+
+  if (!valid) {
+    return res.json({ message: "Wrong password" });
   }
 
   res.json({
-    success: true,
     message: "Login successful",
     user: {
       id: user.id,
       fullname: user.fullname,
-      email: user.email
-    }
+      email: user.email,
+    },
   });
 });
 
@@ -225,7 +212,7 @@ app.post("/check-email", async (req, res) => {
   const { email } = req.body;
 
   const [rows] = await db.query(
-    "SELECT * FROM users WHERE email=?",
+    "SELECT * FROM users WHERE email = ?",
     [email]
   );
 
@@ -278,10 +265,10 @@ app.post("/reset-password", async (req, res) => {
   res.json({ success: true, message: "Password updated" });
 });
 
-/* ===================== START ===================== */
+/* ===================== START SERVER ===================== */
 
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("Server running on", PORT);
+  console.log("✅ Server running on", PORT);
 });
