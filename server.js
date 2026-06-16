@@ -27,6 +27,11 @@ const requiredEnv = ["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME"];
 
 const missingEnv = requiredEnv.filter((key) => !process.env[key]);
 
+
+
+
+
+
 if (missingEnv.length > 0) {
   console.log("⚠️ Missing ENV:", missingEnv.join(", "));
   console.log("❌ DB will NOT work until env is fixed in Railway");
@@ -34,18 +39,25 @@ if (missingEnv.length > 0) {
 
 /* ===================== MYSQL ===================== */
 
-// Replace the MySQL connection part with:
-const db = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "thinktwice_db",
-  port: 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-});
+let db = null;
+
+if (missingEnv.length === 0) {
+  db = mysql.createPool({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT || 3306,
+    waitForConnections: true,
+    connectionLimit: 10,
+  });
+
+  console.log("✅ MySQL pool created");
+}
 
 /* ===================== DB SAFETY WRAPPER ===================== */
+
+
 
 function requireDB(res) {
   if (!db) {
