@@ -152,6 +152,7 @@ document.getElementById("sendResetBtn").addEventListener("click", async () => {
 
   const email = document.querySelector("#forgotModal input[type='email']").value;
 
+  /* STEP 1 */
   if (step === 1) {
 
     if (!email) {
@@ -185,6 +186,7 @@ document.getElementById("sendResetBtn").addEventListener("click", async () => {
     return;
   }
 
+  /* STEP 2 */
   const newPassword = document.getElementById("newPassword").value;
   const confirmPassword = document.getElementById("confirmNewPassword").value;
 
