@@ -64,20 +64,19 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
 
   const data = await res.json();
 
-  alert(data.message);
+alert(data.message);
 
-  if (data.success || data.message === "Login successful") {
-    localStorage.setItem("user", JSON.stringify(data.user));
+if (data.success) {
+  localStorage.setItem("user", JSON.stringify(data.user));
 
-    if (remember) {
-      localStorage.setItem("savedEmail", email);
-    } else {
-      localStorage.removeItem("savedEmail");
-    }
-
-    window.location.href = "fyp.html";
+  if (remember) {
+    localStorage.setItem("savedEmail", email);
+  } else {
+    localStorage.removeItem("savedEmail");
   }
-});
+
+  window.location.href = "fyp.html";
+}
 
 /* =========================
    AUTO FILL EMAIL
