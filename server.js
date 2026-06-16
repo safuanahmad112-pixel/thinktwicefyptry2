@@ -154,7 +154,10 @@ OUTPUT:
       });
     }
 
-    res.json({ success: true, result });
+    res.json({
+      success: true,
+      result
+    });
 
   } catch (err) {
     console.error("AI ERROR:", err);
@@ -225,13 +228,13 @@ app.post("/login", async (req, res) => {
       });
     }
 
-    return res.json({
+    res.json({
       success: true,
       message: "Login successful",
       user: {
         id: user.id,
         fullname: user.fullname,
-        email: user.email,
+        email: user.email
       }
     });
 
@@ -268,7 +271,10 @@ app.post("/check-email", async (req, res) => {
     [token, expiry, email]
   );
 
-  res.json({ exists: true, token });
+  res.json({
+    exists: true,
+    token
+  });
 });
 
 /* ===================== RESET PASSWORD ===================== */
