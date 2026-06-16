@@ -123,22 +123,25 @@ OUTPUT:
       systemPrompt = `You are a helpful AI assistant.`;
     }
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: prompt }
-        ],
-        temperature: aiMode === "concept" ? 0.6 : 0.3,
-        max_tokens: 2500,
-      }),
-    });
+    const response = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "llama-3.1-8b-instant",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt }
+          ],
+          temperature: aiMode === "concept" ? 0.6 : 0.3,
+          max_tokens: 2500,
+        }),
+      }
+    );
 
     const data = await response.json();
     const result = data?.choices?.[0]?.message?.content;
@@ -183,6 +186,7 @@ app.post("/signup", async (req, res) => {
     });
 
   } catch (err) {
+    console.error(err);
     res.status(400).json({
       success: false,
       message: "Error creating account"
@@ -221,13 +225,13 @@ app.post("/login", async (req, res) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       message: "Login successful",
       user: {
         id: user.id,
         fullname: user.fullname,
-        email: user.email
+        email: user.email,
       }
     });
 
