@@ -173,19 +173,6 @@ app.post("/signup", async (req, res) => {
   try {
     const { fullname, email, password } = req.body;
 
-    // Check if user already exists
-    const [existing] = await db.query(
-      "SELECT * FROM users WHERE email = ?",
-      [email]
-    );
-
-    if (existing.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Email already registered"
-      });
-    }
-
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await db.query(
@@ -199,10 +186,10 @@ app.post("/signup", async (req, res) => {
     });
 
   } catch (err) {
-    console.error("SIGNUP ERROR:", err);
+    console.error(err);
     res.status(400).json({
       success: false,
-      message: err.code === 'ER_DUP_ENTRY' ? "Email already registered" : "Error creating account"
+      message: "Error creating account"
     });
   }
 });
@@ -238,7 +225,7 @@ app.post("/login", async (req, res) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       message: "Login successful",
       user: {
@@ -262,35 +249,26 @@ app.post("/login", async (req, res) => {
 app.post("/check-email", async (req, res) => {
   if (!requireDB(res)) return;
 
-  try {
-    const { email } = req.body;
+  const { email } = req.body;
 
-    const [rows] = await db.query(
-      "SELECT * FROM users WHERE email = ?",
-      [email]
-    );
+  const [rows] = await db.query(
+    "SELECT * FROM users WHERE email = ?",
+    [email]
+  );
 
-    if (!rows.length) {
-      return res.json({ exists: false });
-    }
-
-    const token = crypto.randomBytes(32).toString("hex");
-    const expiry = new Date(Date.now() + 15 * 60 * 1000);
-
-    await db.query(
-      "UPDATE users SET reset_token=?, reset_expiry=? WHERE email=?",
-      [token, expiry, email]
-    );
-
-    res.json({ exists: true, token });
-
-  } catch (err) {
-    console.error("CHECK EMAIL ERROR:", err);
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+  if (!rows.length) {
+    return res.json({ exists: false });
   }
+
+  const token = crypto.randomBytes(32).toString("hex");
+  const expiry = new Date(Date.now() + 15 * 60 * 1000);
+
+  await db.query(
+    "UPDATE users SET reset_token=?, reset_expiry=? WHERE email=?",
+    [token, expiry, email]
+  );
+
+  res.json({ exists: true, token });
 });
 
 /* ===================== RESET PASSWORD ===================== */
@@ -298,51 +276,42 @@ app.post("/check-email", async (req, res) => {
 app.post("/reset-password", async (req, res) => {
   if (!requireDB(res)) return;
 
-  try {
-    const { email, token, newPassword } = req.body;
+  const { email, token, newPassword } = req.body;
 
-    const [rows] = await db.query(
-      "SELECT * FROM users WHERE email=? AND reset_token=?",
-      [email, token]
-    );
+  const [rows] = await db.query(
+    "SELECT * FROM users WHERE email=? AND reset_token=?",
+    [email, token]
+  );
 
-    if (!rows.length) {
-      return res.json({
-        success: false,
-        message: "Invalid token"
-      });
-    }
-
-    const user = rows[0];
-
-    if (new Date(user.reset_expiry) < new Date()) {
-      return res.json({
-        success: false,
-        message: "Token expired"
-      });
-    }
-
-    const hashed = await bcrypt.hash(newPassword, 10);
-
-    await db.query(
-      `UPDATE users 
-       SET password=?, reset_token=NULL, reset_expiry=NULL 
-       WHERE email=?`,
-      [hashed, email]
-    );
-
-    res.json({
-      success: true,
-      message: "Password updated"
-    });
-
-  } catch (err) {
-    console.error("RESET PASSWORD ERROR:", err);
-    res.status(500).json({
+  if (!rows.length) {
+    return res.json({
       success: false,
-      message: err.message
+      message: "Invalid token"
     });
   }
+
+  const user = rows[0];
+
+  if (new Date(user.reset_expiry) < new Date()) {
+    return res.json({
+      success: false,
+      message: "Token expired"
+    });
+  }
+
+  const hashed = await bcrypt.hash(newPassword, 10);
+
+  await db.query(
+    `UPDATE users 
+     SET password=?, reset_token=NULL, reset_expiry=NULL 
+     WHERE email=?`,
+    [hashed, email]
+  );
+
+  res.json({
+    success: true,
+    message: "Password updated"
+  });
 });
 
 /* ===================== START SERVER ===================== */
