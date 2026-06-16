@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThinkTwice Pricing</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+    background:#f7f8fc;
+    color:#222;
+    padding:30px;
+}
+
+.container{
+    max-width:1400px;
+    margin:auto;
+}
+
+/* HEADER */
+
+.header{
+    background:#fff;
+    border-radius:18px;
+    padding:25px 35px;
+    box-shadow:0 8px 20px rgba(0,0,0,.06);
+}
+
+.top-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:20px;
+}
+
+.logo h1{
+    font-size:58px;
+    font-weight:800;
+    color:#111;
+}
+
+.logo span{
+    color:#6d3df5;
+}
+
+.logo p{
+    margin-top:6px;
+    color:#666;
+    font-size:18px;
+}
+
+.free-box{
+    background:#f4f0ff;
+    border-radius:16px;
+    padding:22px 28px;
+    min-width:320px;
+}
+
+.free-box h3{
+    color:#5a27ff;
+    font-size:26px;
+}
+
+.free-box p{
+    margin-top:5px;
+    color:#444;
+}
+
+.info-bar{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:15px;
+    margin-top:25px;
+}
+
+.info-item{
+    background:#fafafa;
+    border-radius:12px;
+    padding:15px;
+    text-align:center;
+    border:1px solid #eee;
+}
+
+.info-item h4{
+    margin-bottom:5px;
+}
+
+.section-title{
+    text-align:center;
+    font-size:32px;
+    font-weight:700;
+    margin:35px 0;
+    color:#222;
+}
+
+/* PRICING */
+
+.pricing-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:25px;
+}
+
+.card{
+    background:#fff;
+    border-radius:20px;
+    overflow:hidden;
+    box-shadow:0 10px 25px rgba(0,0,0,.08);
+    position:relative;
+}
+
+.badge{
+    position:absolute;
+    top:15px;
+    left:15px;
+    color:#fff;
+    font-size:12px;
+    font-weight:700;
+    padding:8px 12px;
+    border-radius:30px;
+}
+
+.green{background:#15b86b;}
+.purple{background:#7a38ff;}
+.orange{background:#ff9c1a;}
+.blue{background:#2e65ff;}
+
+.card-content{
+    padding:35px 25px;
+}
+
+.plan{
+    text-align:center;
+    margin-top:15px;
+}
+
+.plan h2{
+    font-size:34px;
+    margin-bottom:8px;
+}
+
+.plan p{
+    color:#666;
+}
+
+.price{
+    text-align:center;
+    margin:25px 0;
+}
+
+.price h3{
+    font-size:48px;
+}
+
+.price span{
+    font-size:18px;
+    color:#666;
+}
+
+.features{
+    list-style:none;
+}
+
+.features li{
+    padding:10px 0;
+    border-bottom:1px solid #eee;
+    color:#444;
+}
+
+.btn{
+    margin-top:25px;
+    display:block;
+    text-align:center;
+    text-decoration:none;
+    color:#fff;
+    padding:14px;
+    border-radius:12px;
+    font-weight:700;
+}
+
+.btn-green{background:#15b86b;}
+.btn-purple{background:#7a38ff;}
+.btn-orange{background:#ff9c1a;}
+.btn-blue{background:#2e65ff;}
+
+/* TABLE */
+
+.table-section{
+    margin-top:40px;
+    background:#fff;
+    border-radius:20px;
+    overflow:hidden;
+    box-shadow:0 10px 25px rgba(0,0,0,.08);
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th{
+    background:#f5f6fb;
+    padding:18px;
+    font-size:18px;
+}
+
+td{
+    padding:16px;
+    border-top:1px solid #ececec;
+    text-align:center;
+}
+
+td:first-child{
+    text-align:left;
+    font-weight:600;
+}
+
+.check{
+    color:#12b76a;
+    font-size:20px;
+}
+
+/* BOTTOM FEATURES */
+
+.bottom-grid{
+    margin-top:35px;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:25px;
+}
+
+.bottom-card{
+    background:#fff;
+    border-radius:18px;
+    padding:25px;
+    text-align:center;
+    box-shadow:0 8px 20px rgba(0,0,0,.06);
+}
+
+.bottom-card h3{
+    margin-bottom:15px;
+}
+
+.icons{
+    display:flex;
+    justify-content:center;
+    gap:25px;
+    margin-top:20px;
+    flex-wrap:wrap;
+}
+
+.icon{
+    background:#f7f7f7;
+    padding:10px 15px;
+    border-radius:10px;
+}
+
+.footer-banner{
+    margin-top:30px;
+    background:#f3ecff;
+    color:#6b32ff;
+    text-align:center;
+    padding:20px;
+    border-radius:18px;
+    font-size:24px;
+    font-weight:700;
+}
+
+/* RESPONSIVE */
+
+@media(max-width:1200px){
+    .pricing-grid{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .info-bar{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .bottom-grid{
+        grid-template-columns:1fr;
+    }
+}
+
+@media(max-width:768px){
+
+    body{
+        padding:15px;
+    }
+
+    .logo h1{
+        font-size:42px;
+    }
+
+    .pricing-grid{
+        grid-template-columns:1fr;
+    }
+
+    .info-bar{
+        grid-template-columns:1fr;
+    }
+
+    .top-row{
+        flex-direction:column;
+        align-items:flex-start;
+    }
+
+    table{
+        font-size:14px;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="header">
+
+        <div class="top-row">
+            <div class="logo">
+                <h1>Think<span>Twice</span></h1>
+                <p>AI-powered critical thinking & idea stress-testing platform</p>
+            </div>
+
+            <div class="free-box">
+                <h3>∞ ALL AI PERSPECTIVES ARE FREE</h3>
+                <p>No limits. Always.</p>
+            </div>
+        </div>
+
+        <div class="info-bar">
+            <div class="info-item">
+                <h4>Multiple Devices</h4>
+                <p>Access anywhere, anytime</p>
+            </div>
+
+            <div class="info-item">
+                <h4>In-Scope References</h4>
+                <p>Credible. Citable. Reliable.</p>
+            </div>
+
+            <div class="info-item">
+                <h4>Multiple Modes</h4>
+                <p>Student • Academic • Professional</p>
+            </div>
+
+            <div class="info-item">
+                <h4>Always Free</h4>
+                <p>All AI perspectives, no limits</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-title">
+        PICK THE PLAN THAT FITS YOUR JOURNEY
+    </div>
+
+    <div class="pricing-grid">
+
+        <div class="card">
+            <div class="badge green">FREE FOREVER</div>
+
+            <div class="card-content">
+
+                <div class="plan">
+                    <h2 style="color:#15b86b;">EXPLORER</h2>
+                    <p>For students & idea starters</p>
+                </div>
+
+                <div class="price">
+                    <h3>RM 0</h3>
+                    <span>Always Free</span>
+                </div>
+
+                <ul class="features">
+                    <li>✓ Unlimited uploads</li>
+                    <li>✓ All AI Perspectives</li>
+                    <li>✓ Structured critique</li>
+                    <li>✓ Risk level tags</li>
+                    <li>✓ Save up to 5 ideas</li>
+                </ul>
+
+                <a href="#" class="btn btn-green">
+                    Start Exploring
+                </a>
+
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="badge purple">MOST POPULAR</div>
+
+            <div class="card-content">
+
+                <div class="plan">
+                    <h2 style="color:#7a38ff;">BUILDER</h2>
+                    <p>For learners & doers</p>
+                </div>
+
+                <div class="price">
+                    <h3>RM 6.90</h3>
+                    <span>/ month</span>
+                </div>
+
+                <ul class="features">
+                    <li>✓ Detailed improvement tips</li>
+                    <li>✓ Idea history up to 50</li>
+                    <li>✓ Export PDF reports</li>
+                    <li>✓ Organize folders</li>
+                    <li>✓ Track progress</li>
+                </ul>
+
+                <a href="#" class="btn btn-purple">
+                    Build Better Ideas
+                </a>
+
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="badge orange">BEST VALUE</div>
+
+            <div class="card-content">
+
+                <div class="plan">
+                    <h2 style="color:#ff9c1a;">MASTERMIND</h2>
+                    <p>For entrepreneurs & professionals</p>
+                </div>
+
+                <div class="price">
+                    <h3>RM 14.90</h3>
+                    <span>/ month</span>
+                </div>
+
+                <ul class="features">
+                    <li>✓ Advanced analysis</li>
+                    <li>✓ Scoring & confidence meter</li>
+                    <li>✓ Priority AI response</li>
+                    <li>✓ Unlimited history</li>
+                    <li>✓ Shareable reports</li>
+                </ul>
+
+                <a href="#" class="btn btn-orange">
+                    Make Smarter Decisions
+                </a>
+
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="badge blue">FOR TEAMS</div>
+
+            <div class="card-content">
+
+                <div class="plan">
+                    <h2 style="color:#2e65ff;">TEAM</h2>
+                    <p>For teams & organizations</p>
+                </div>
+
+                <div class="price">
+                    <h3>RM 29.90</h3>
+                    <span>/ month</span>
+                </div>
+
+                <ul class="features">
+                    <li>✓ Up to 10 members</li>
+                    <li>✓ Shared folders</li>
+                    <li>✓ Team insights</li>
+                    <li>✓ Custom permissions</li>
+                    <li>✓ Priority support</li>
+                </ul>
+
+                <a href="#" class="btn btn-blue">
+                    Build Together
+                </a>
+
+            </div>
+        </div>
+
+    </div>
+
+    <div class="table-section">
+
+        <table>
+
+            <tr>
+                <th>Feature Comparison</th>
+                <th>Explorer</th>
+                <th>Builder</th>
+                <th>Mastermind</th>
+                <th>Team</th>
+            </tr>
+
+            <tr>
+                <td>All AI Perspectives</td>
+                <td class="check">✓</td>
+                <td class="check">✓</td>
+                <td class="check">✓</td>
+                <td class="check">✓</td>
+            </tr>
+
+            <tr>
+                <td>Unlimited Uploads</td>
+                <td class="check">✓</td>
+                <td class="check">✓</td>
+                <td class="check">✓</td>
+                <td class="check">✓</td>
+            </tr>
+
+            <tr>
+                <td>Structured Critique</td>
+                <td class="check">✓</td>
+                <td class="check">✓</td>
+                <td class="check">✓</td>
+                <td class="check">✓</td>
+            </tr>
+
+            <tr>
+                <td>Idea History</td>
+                <td>Up to 5</td>
+                <td>Up to 50</td>
+                <td>Unlimited</td>
+                <td>Unlimited</td>
+            </tr>
+
+            <tr>
+                <td>Priority Support</td>
+                <td>-</td>
+                <td>Standard</td>
+                <td>Priority</td>
+                <td>Priority</td>
+            </tr>
+
+        </table>
+
+    </div>
+
+    <div class="bottom-grid">
+
+        <div class="bottom-card">
+            <h3>MULTIPLE DEVICES</h3>
+            <p>Seamless experience across all your devices.</p>
+
+            <div class="icons">
+                <div class="icon">Desktop</div>
+                <div class="icon">Laptop</div>
+                <div class="icon">Tablet</div>
+                <div class="icon">Mobile</div>
+            </div>
+        </div>
+
+        <div class="bottom-card">
+            <h3>REFERENCES WITHIN SCOPE</h3>
+            <p>Academic journals, market reports, books, government sources and more.</p>
+        </div>
+
+        <div class="bottom-card">
+            <h3>MULTIPLE MODES</h3>
+            <p>Student • Academic • Professional • Entrepreneur</p>
+        </div>
+
+    </div>
+
+    <div class="footer-banner">
+        Think smarter. Think twice.
+    </div>
+
+</div>
+
+</body>
+</html>

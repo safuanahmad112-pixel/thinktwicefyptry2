@@ -7,6 +7,9 @@ let roles = [];
 let modes = [];
 let isLoading = false
 
+// Store full conversation history
+let conversationHistory = [];
+
 /* ========================
    ROLE SELECTION
 ======================== */
@@ -64,6 +67,7 @@ function format(text) {
 async function analyze() {
 
   const idea = document.getElementById("idea").value.trim();
+  saveIdeaLog(idea);
   const output = document.getElementById("output");
   const actions = document.querySelector(".output-actions");
 
@@ -111,6 +115,7 @@ async function analyze() {
     });
 
     const data = await res.json();
+    const aiResponse = data.result || "No response";
 
     loadingDiv.remove();
 
@@ -147,6 +152,17 @@ async function analyze() {
 
     chatWrapper.className = "chat-wrapper";
 
+    // Save conversation history
+conversationHistory.push({
+  role: "user",
+  message: idea
+});
+
+conversationHistory.push({
+  role: "assistant",
+  message: aiResponse
+});
+
     chatWrapper.innerHTML = `
 
       <!-- USER MESSAGE -->
@@ -176,8 +192,8 @@ async function analyze() {
           </div>
 
           <div class="message-text">
-            ${format(data.result || "No response")}
-          </div>
+            ${format(aiResponse)}
+            </div>
 
         </div>
 
@@ -684,6 +700,7 @@ document.getElementById("analyzeBtn").innerHTML = `
    LOAD SETTINGS
 ======================== */
 window.addEventListener("load", () => {
+  renderIdeaLogs();
   const savedLang = localStorage.getItem("lang");
   if (savedLang) applyLanguage(savedLang);
 
@@ -739,7 +756,6 @@ document.addEventListener("click", (e) => {
 ======================== */
 const reportModal = document.getElementById("reportModal");
 const cancelReport = document.getElementById("cancelReport");
-const submitReport = document.querySelector(".submit-btn");
 
 document.querySelectorAll(".help-dropdown a")[0].addEventListener("click", (e) => {
   e.preventDefault();
@@ -747,11 +763,6 @@ document.querySelectorAll(".help-dropdown a")[0].addEventListener("click", (e) =
 });
 
 cancelReport.addEventListener("click", () => {
-  reportModal.style.display = "none";
-});
-
-submitReport.addEventListener("click", () => {
-  alert("Report submitted!");
   reportModal.style.display = "none";
 });
 
@@ -797,20 +808,41 @@ function getOutputText() {
   return document.getElementById("output").textContent;
 }
 
-/* COPY */
-function copyOutput() {
-  navigator.clipboard.writeText(getOutputText())
-    .then(() => alert("Copied!"));
+async function copyOutput() {
+  const text = getOutputText();
+
+  await navigator.clipboard.writeText(text);
+
+  await trackAction("copy");
+
+  alert("Copied!");
 }
 
-/* SHARE */
-function shareOutput() {
+async function shareOutput() {
   const text = getOutputText();
+
+  await trackAction("share");
+
+  if (navigator.share) {
+    await navigator.share({
+      title: "ThinkTwice Result",
+      text
+    });
+  } else {
+    await navigator.clipboard.writeText(text);
+    alert("Copied for sharing!");
+  }
+}
+
+async function shareOutput() {
+  const text = getOutputText();
+
+  await trackAction("share");
 
   if (navigator.share) {
     navigator.share({
       title: "ThinkTwice Result",
-      text: text
+      text
     });
   } else {
     navigator.clipboard.writeText(text);
@@ -819,14 +851,15 @@ function shareOutput() {
 }
 
 /* LIKE */
-function like() {
+async function like() {
   likes++;
+  await trackAction("like");
   alert("👍 Liked: " + likes);
 }
 
-/* DISLIKE */
-function dislike() {
+async function dislike() {
   dislikes++;
+  await trackAction("dislike");
   alert("👎 Disliked: " + dislikes);
 }
 
@@ -1065,3 +1098,257 @@ document.getElementById("topBtnn").addEventListener("click", () => {
     behavior: "smooth"
   });
 });
+
+let selectedReason = "";
+
+document.querySelectorAll(".report-option")
+.forEach(btn => {
+
+    btn.addEventListener("click", () => {
+
+        document.querySelectorAll(".report-option")
+        .forEach(b => b.classList.remove("active"));
+
+        btn.classList.add("active");
+
+        selectedReason = btn.dataset.reason;
+    });
+
+});
+
+document
+.getElementById("submitReport")
+.addEventListener("click", async () => {
+
+    const description =
+        document.getElementById("reportDescription").value;
+
+    const conversation =
+        JSON.stringify(conversationHistory, null, 2);
+
+    const user =
+        JSON.parse(localStorage.getItem("user"));
+
+    if (!selectedReason) {
+        alert("Please select a reason.");
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            "http://localhost:3000/report",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    userId: user?.id || null,
+                    email: user?.email || "",
+                    reason: selectedReason,
+                    description,
+                    conversation,
+                    reported_by: "user"
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (data.success) {
+
+            alert("Report submitted successfully.");
+
+            document.getElementById("reportModal")
+                .style.display = "none";
+
+            document.getElementById("reportDescription")
+                .value = "";
+
+        } else {
+
+            alert(data.error || "Failed to submit report.");
+        }
+
+    } catch (error) {
+
+        console.error(error);
+        alert("Server error.");
+    }
+});
+
+async function savePDF() {
+
+    const output = document.getElementById("output");
+
+    const canvas = await html2canvas(output, {
+        scale: 2
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+
+    const { jsPDF } = window.jspdf;
+
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    const imgWidth = pdfWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+
+    heightLeft -= pdfHeight;
+
+    while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+    }
+
+    const fileName = `ThinkTwice-Analysis-${Date.now()}.pdf`;
+
+    pdf.save(fileName);
+
+    await trackAction("save_pdf", fileName);
+}
+
+async function saveAction(action_type, pdf_name = null) {
+  const text = getOutputText();
+
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  await fetch("http://localhost:3000/action", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: user?.email || "guest",
+      action_type,
+      pdf_name,
+      conversation: text
+    })
+  });
+}
+
+async function trackAction(action_type, pdf_name = null) {
+  const text = getOutputText();
+
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  await fetch("http://localhost:3000/action", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: user?.email || "guest",
+      action_type,
+      pdf_name,
+      conversation: text
+    })
+  });
+}
+
+function saveIdeaLog(text) {
+
+  let ideas =
+    JSON.parse(
+      localStorage.getItem("ideaLogs")
+    ) || [];
+
+  ideas.unshift(text);
+
+  ideas = ideas.slice(0, 20);
+
+  localStorage.setItem(
+    "ideaLogs",
+    JSON.stringify(ideas)
+  );
+
+  renderIdeaLogs();
+}
+
+function renderIdeaLogs() {
+
+  const container =
+    document.getElementById(
+      "ideaLogContainer"
+    );
+
+  if (!container) return;
+
+  const ideas =
+    JSON.parse(
+      localStorage.getItem("ideaLogs")
+    ) || [];
+
+  container.innerHTML = "";
+
+  ideas.forEach(idea => {
+
+    const item =
+      document.createElement("div");
+
+    item.className =
+      "idea-log-item";
+
+    item.textContent = idea;
+
+    item.onclick = () => {
+
+  const followUp =
+    document.getElementById("followUpInput");
+
+  const mainIdea =
+    document.getElementById("idea");
+
+  // If follow-up box is visible
+  if (
+    followUp &&
+    window.getComputedStyle(
+      document.getElementById("followUpBox")
+    ).display !== "none"
+  ) {
+    followUp.value = idea;
+    followUp.focus();
+  } else {
+    mainIdea.value = idea;
+    mainIdea.focus();
+  }
+
+};
+
+    container.appendChild(item);
+
+  });
+}
+
+function enableEnterSend(textarea, callback) {
+
+  textarea.addEventListener("keydown", (e) => {
+
+    if (e.key === "Enter" && !e.shiftKey) {
+
+      e.preventDefault();
+
+      callback();
+
+    }
+
+  });
+
+}
+
+enableEnterSend(
+  document.getElementById("idea"),
+  analyze
+);
+
+enableEnterSend(
+  document.getElementById("followUpInput"),
+  () => document.getElementById("followUpBtn").click()
+);

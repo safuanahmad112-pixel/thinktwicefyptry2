@@ -5,6 +5,8 @@
   <title>ThinkTwice</title>
   <link rel="stylesheet" href="fyp.css">
 </head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <body>
 
 <!-- SETTINGS ICON -->
@@ -70,9 +72,9 @@
       Release notes
     </a>
 
-    <a href="#">
+    <a onclick="location.href=plan.html'">
       <span class="icon">📥</span>
-      Download apps
+      Subscribe Plan
     </a>
 
     <div class="help-divider"></div>
@@ -174,22 +176,38 @@
     <p>Select a reason:</p>
 
     <div class="report-options">
-      <button class="report-option">Spam</button>
-      <button class="report-option">Harmful content</button>
-      <button class="report-option">False information</button>
-      <button class="report-option">Other</button>
+      <button class="report-option" data-reason="Spam">Spam</button>
+      <button class="report-option" data-reason="Harmful content">Harmful content</button>
+      <button class="report-option" data-reason="False information">False information</button>
+      <button class="report-option" data-reason="Other">Other</button>
     </div>
 
-    <textarea placeholder="Describe the issue..."></textarea>
+    <textarea
+      id="reportDescription"
+      placeholder="Describe the issue..."
+    ></textarea>
 
     <div class="report-actions">
       <button id="cancelReport" class="cancel-btn">Cancel</button>
-      <button class="submit-btn">Submit</button>
+      <button id="submitReport" class="submit-btn">Submit</button>
     </div>
 
   </div>
 </div>
 
+<div id="historyTrigger" class="history-trigger">
+  <span></span>
+  <span></span>
+  <span></span>
+</div>
+
+<div id="historyPanel" class="history-panel">
+  <div class="history-header">
+    Recent Chats
+  </div>
+
+  <div id="ideaLogContainer"></div>
+</div>
 
 <!-- MAIN CONTENT -->
 <div class="container">
@@ -301,6 +319,7 @@
   <button onclick="like()">👍</button>
   <button onclick="dislike()">👎</button>
   <button onclick="shareOutput()">🔗</button>
+  <button onclick="savePDF()">💾</button>
 </div>
 
  <!-- FOLLOW UP BOX -->
