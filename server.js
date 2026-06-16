@@ -11,12 +11,7 @@ dotenv.config();
 
 const app = express();
 
-/* ===================== MIDDLEWARE ===================== */
-
-app.use(cors({
-  origin: "*"
-}));
-
+app.use(cors());
 app.use(express.json());
 
 /* ===================== PATH ===================== */
@@ -28,19 +23,13 @@ app.use(express.static(path.join(__dirname, "public")));
 
 /* ===================== ENV CHECK ===================== */
 
-const requiredEnv = [
-  "DB_HOST",
-  "DB_USER",
-  "DB_PASSWORD",
-  "DB_NAME",
-  "DB_PORT"
-];
+const requiredEnv = ["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME"];
 
 const missingEnv = requiredEnv.filter((key) => !process.env[key]);
 
 if (missingEnv.length > 0) {
   console.log("⚠️ Missing ENV:", missingEnv.join(", "));
-  console.log("❌ DB will NOT work until Railway ENV is fixed");
+  console.log("❌ DB will NOT work until env is fixed in Railway");
 }
 
 /* ===================== MYSQL ===================== */
@@ -53,28 +42,27 @@ if (missingEnv.length === 0) {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port: Number(process.env.DB_PORT || 3306),
+    port: process.env.DB_PORT || 3306,
     waitForConnections: true,
     connectionLimit: 10,
   });
 
-  console.log("✅ MySQL connected");
+  console.log("✅ MySQL pool created");
 }
 
-/* ===================== DB SAFETY ===================== */
+/* ===================== DB SAFETY WRAPPER ===================== */
 
 function requireDB(res) {
   if (!db) {
     res.status(500).json({
-      success: false,
-      message: "Database not configured (check Railway ENV variables)"
+      error: "Database not configured. Check Railway ENV variables.",
     });
     return false;
   }
   return true;
 }
 
-/* ===================== HOME ===================== */
+/* ===================== START PAGE ===================== */
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
@@ -123,7 +111,7 @@ OUTPUT:
       systemPrompt = `You are a helpful AI assistant.`;
     }
 
-    const response = await fetch(
+    const response = await globalThis.fetch(
       "https://api.groq.com/openai/v1/chat/completions",
       {
         method: "POST",
@@ -148,23 +136,16 @@ OUTPUT:
 
     if (!result) {
       return res.status(500).json({
-        success: false,
-        message: "No AI response",
-        raw: data
+        error: "No AI response",
+        raw: data,
       });
     }
 
-    res.json({
-      success: true,
-      result
-    });
+    res.json({ result });
 
   } catch (err) {
-    console.error("AI ERROR:", err);
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    console.error("API ERROR:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -183,17 +164,9 @@ app.post("/signup", async (req, res) => {
       [fullname, email, hashedPassword]
     );
 
-    res.json({
-      success: true,
-      message: "Account created successfully"
-    });
-
+    res.json({ message: "Account created successfully" });
   } catch (err) {
-    console.error(err);
-    res.status(400).json({
-      success: false,
-      message: "Error creating account"
-    });
+    res.status(400).json({ message: "Error creating account" });
   }
 });
 
@@ -202,49 +175,33 @@ app.post("/signup", async (req, res) => {
 app.post("/login", async (req, res) => {
   if (!requireDB(res)) return;
 
-  try {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
 
-    const [rows] = await db.query(
-      "SELECT * FROM users WHERE email = ?",
-      [email]
-    );
+  const [rows] = await db.query(
+    "SELECT * FROM users WHERE email = ?",
+    [email]
+  );
 
-    if (!rows.length) {
-      return res.json({
-        success: false,
-        message: "User not found"
-      });
-    }
-
-    const user = rows[0];
-
-    const valid = await bcrypt.compare(password, user.password);
-
-    if (!valid) {
-      return res.json({
-        success: false,
-        message: "Wrong password"
-      });
-    }
-
-    res.json({
-      success: true,
-      message: "Login successful",
-      user: {
-        id: user.id,
-        fullname: user.fullname,
-        email: user.email
-      }
-    });
-
-  } catch (err) {
-    console.error("LOGIN ERROR:", err);
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+  if (!rows.length) {
+    return res.json({ message: "User not found" });
   }
+
+  const user = rows[0];
+
+  const valid = await bcrypt.compare(password, user.password);
+
+  if (!valid) {
+    return res.json({ message: "Wrong password" });
+  }
+
+  res.json({
+    message: "Login successful",
+    user: {
+      id: user.id,
+      fullname: user.fullname,
+      email: user.email,
+    },
+  });
 });
 
 /* ===================== CHECK EMAIL ===================== */
@@ -271,10 +228,7 @@ app.post("/check-email", async (req, res) => {
     [token, expiry, email]
   );
 
-  res.json({
-    exists: true,
-    token
-  });
+  res.json({ exists: true, token });
 });
 
 /* ===================== RESET PASSWORD ===================== */
@@ -290,19 +244,13 @@ app.post("/reset-password", async (req, res) => {
   );
 
   if (!rows.length) {
-    return res.json({
-      success: false,
-      message: "Invalid token"
-    });
+    return res.json({ success: false, message: "Invalid token" });
   }
 
   const user = rows[0];
 
   if (new Date(user.reset_expiry) < new Date()) {
-    return res.json({
-      success: false,
-      message: "Token expired"
-    });
+    return res.json({ success: false, message: "Token expired" });
   }
 
   const hashed = await bcrypt.hash(newPassword, 10);
@@ -314,10 +262,7 @@ app.post("/reset-password", async (req, res) => {
     [hashed, email]
   );
 
-  res.json({
-    success: true,
-    message: "Password updated"
-  });
+  res.json({ success: true, message: "Password updated" });
 });
 
 /* ===================== START SERVER ===================== */
