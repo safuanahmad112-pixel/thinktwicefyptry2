@@ -157,6 +157,16 @@ app.post("/signup", async (req, res) => {
   try {
     const { fullname, email, password } = req.body;
 
+    // Check if user already exists
+    const [existing] = await db.query(
+      "SELECT * FROM users WHERE email = ?",
+      [email]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({ message: "Email already registered" });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await db.query(
@@ -164,9 +174,10 @@ app.post("/signup", async (req, res) => {
       [fullname, email, hashedPassword]
     );
 
-    res.json({ message: "Account created successfully" });
+    res.json({ message: "Account created successfully", success: true });
   } catch (err) {
-    res.status(400).json({ message: "Error creating account" });
+    console.error("Signup error:", err);
+    res.status(400).json({ message: "Error creating account", success: false });
   }
 });
 
@@ -175,33 +186,48 @@ app.post("/signup", async (req, res) => {
 app.post("/login", async (req, res) => {
   if (!requireDB(res)) return;
 
-  const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-  const [rows] = await db.query(
-    "SELECT * FROM users WHERE email = ?",
-    [email]
-  );
+    const [rows] = await db.query(
+      "SELECT * FROM users WHERE email = ?",
+      [email]
+    );
 
-  if (!rows.length) {
-    return res.json({ message: "User not found" });
+    if (!rows.length) {
+      return res.json({ 
+        message: "User not found", 
+        success: false 
+      });
+    }
+
+    const user = rows[0];
+
+    const valid = await bcrypt.compare(password, user.password);
+
+    if (!valid) {
+      return res.json({ 
+        message: "Wrong password", 
+        success: false 
+      });
+    }
+
+    res.json({
+      message: "Login successful",
+      success: true,
+      user: {
+        id: user.id,
+        fullname: user.fullname,
+        email: user.email,
+      },
+    });
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ 
+      message: "Server error", 
+      success: false 
+    });
   }
-
-  const user = rows[0];
-
-  const valid = await bcrypt.compare(password, user.password);
-
-  if (!valid) {
-    return res.json({ message: "Wrong password" });
-  }
-
-  res.json({
-    message: "Login successful",
-    user: {
-      id: user.id,
-      fullname: user.fullname,
-      email: user.email,
-    },
-  });
 });
 
 /* ===================== CHECK EMAIL ===================== */
@@ -211,24 +237,29 @@ app.post("/check-email", async (req, res) => {
 
   const { email } = req.body;
 
-  const [rows] = await db.query(
-    "SELECT * FROM users WHERE email = ?",
-    [email]
-  );
+  try {
+    const [rows] = await db.query(
+      "SELECT * FROM users WHERE email = ?",
+      [email]
+    );
 
-  if (!rows.length) {
-    return res.json({ exists: false });
+    if (!rows.length) {
+      return res.json({ exists: false });
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiry = new Date(Date.now() + 15 * 60 * 1000);
+
+    await db.query(
+      "UPDATE users SET reset_token=?, reset_expiry=? WHERE email=?",
+      [token, expiry, email]
+    );
+
+    res.json({ exists: true, token });
+  } catch (err) {
+    console.error("Check email error:", err);
+    res.status(500).json({ error: "Server error" });
   }
-
-  const token = crypto.randomBytes(32).toString("hex");
-  const expiry = new Date(Date.now() + 15 * 60 * 1000);
-
-  await db.query(
-    "UPDATE users SET reset_token=?, reset_expiry=? WHERE email=?",
-    [token, expiry, email]
-  );
-
-  res.json({ exists: true, token });
 });
 
 /* ===================== RESET PASSWORD ===================== */
@@ -238,31 +269,36 @@ app.post("/reset-password", async (req, res) => {
 
   const { email, token, newPassword } = req.body;
 
-  const [rows] = await db.query(
-    "SELECT * FROM users WHERE email=? AND reset_token=?",
-    [email, token]
-  );
+  try {
+    const [rows] = await db.query(
+      "SELECT * FROM users WHERE email=? AND reset_token=?",
+      [email, token]
+    );
 
-  if (!rows.length) {
-    return res.json({ success: false, message: "Invalid token" });
+    if (!rows.length) {
+      return res.json({ success: false, message: "Invalid token" });
+    }
+
+    const user = rows[0];
+
+    if (new Date(user.reset_expiry) < new Date()) {
+      return res.json({ success: false, message: "Token expired" });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    await db.query(
+      `UPDATE users 
+       SET password=?, reset_token=NULL, reset_expiry=NULL 
+       WHERE email=?`,
+      [hashed, email]
+    );
+
+    res.json({ success: true, message: "Password updated" });
+  } catch (err) {
+    console.error("Reset password error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
-
-  const user = rows[0];
-
-  if (new Date(user.reset_expiry) < new Date()) {
-    return res.json({ success: false, message: "Token expired" });
-  }
-
-  const hashed = await bcrypt.hash(newPassword, 10);
-
-  await db.query(
-    `UPDATE users 
-     SET password=?, reset_token=NULL, reset_expiry=NULL 
-     WHERE email=?`,
-    [hashed, email]
-  );
-
-  res.json({ success: true, message: "Password updated" });
 });
 
 /* ===================== START SERVER ===================== */
