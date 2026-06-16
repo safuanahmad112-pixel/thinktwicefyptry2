@@ -21,6 +21,28 @@ function closeSignupModal() {
 }
 
 /* =========================
+   THEME
+========================= */
+
+function toggleTheme() {
+  const body = document.body;
+  const themeText = document.getElementById("themeText");
+  const themeIcon = document.getElementById("themeIcon");
+
+  if (body.classList.contains("light-mode")) {
+    body.classList.remove("light-mode");
+    body.classList.add("dark-mode");
+    themeText.innerText = "Dark";
+    themeIcon.className = "fa-solid fa-moon";
+  } else {
+    body.classList.remove("dark-mode");
+    body.classList.add("light-mode");
+    themeText.innerText = "Light";
+    themeIcon.className = "fa-solid fa-sun";
+  }
+}
+
+/* =========================
    SIGNUP
 ========================= */
 
@@ -37,14 +59,27 @@ document.getElementById("signupBtn").addEventListener("click", async () => {
     return;
   }
 
-  const res = await fetch(`${API_URL}/signup`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fullname, email, password })
-  });
+  try {
+    const res = await fetch(`${API_URL}/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fullname, email, password })
+    });
 
-  const data = await res.json();
-  alert(data.message);
+    const data = await res.json();
+
+    if (data.success) {
+      alert(data.message);
+      closeSignupModal();
+      // Clear the form
+      inputs.forEach(input => input.value = "");
+    } else {
+      alert(data.message || "Signup failed");
+    }
+  } catch (err) {
+    alert("Error signing up. Please try again.");
+    console.error(err);
+  }
 });
 
 /* =========================
@@ -56,27 +91,36 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
   const password = document.getElementById("loginPassword").value;
   const remember = document.getElementById("rememberMe").checked;
 
-  const res = await fetch(`${API_URL}/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password })
-  });
+  if (!email || !password) {
+    alert("Please enter both email and password");
+    return;
+  }
 
-  const data = await res.json();
+  try {
+    const res = await fetch(`${API_URL}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
 
-  const msg = data.message || data.error || "Unknown error";
-  alert(msg);
+    const data = await res.json();
 
-  if (data.user) {
-    localStorage.setItem("user", JSON.stringify(data.user));
+    if (data.success) {
+      localStorage.setItem("user", JSON.stringify(data.user));
 
-    if (remember) {
-      localStorage.setItem("savedEmail", email);
+      if (remember) {
+        localStorage.setItem("savedEmail", email);
+      } else {
+        localStorage.removeItem("savedEmail");
+      }
+
+      window.location.href = "fyp.html";
     } else {
-      localStorage.removeItem("savedEmail");
+      alert(data.message);
     }
-
-    window.location.href = "fyp.html";
+  } catch (err) {
+    alert("Error logging in. Please try again.");
+    console.error(err);
   }
 });
 
@@ -88,8 +132,11 @@ window.addEventListener("DOMContentLoaded", () => {
   const savedEmail = localStorage.getItem("savedEmail");
 
   if (savedEmail) {
-    document.querySelector(".login-card input[type='email']").value = savedEmail;
-    document.getElementById("rememberMe").checked = true;
+    const emailInput = document.querySelector(".login-card input[type='email']");
+    if (emailInput) {
+      emailInput.value = savedEmail;
+      document.getElementById("rememberMe").checked = true;
+    }
   }
 });
 
@@ -117,6 +164,8 @@ function setupPasswordToggle(toggleId, inputId) {
 setupPasswordToggle("loginToggle", "loginPassword");
 setupPasswordToggle("signupToggle", "signupPassword");
 setupPasswordToggle("confirmToggle", "confirmPassword");
+setupPasswordToggle("toggleNewPassword", "newPassword");
+setupPasswordToggle("toggleConfirmNewPassword", "confirmNewPassword");
 
 /* =========================
    FORGOT PASSWORD FLOW
@@ -126,42 +175,47 @@ let resetToken = null;
 let step = 1;
 
 document.getElementById("sendResetBtn").addEventListener("click", async () => {
-
   const email = document.querySelector("#forgotModal input[type='email']").value;
 
+  /* STEP 1: Verify Email */
   if (step === 1) {
-
     if (!email) {
       alert("Please enter email");
       return;
     }
 
-    const res = await fetch(`${API_URL}/check-email`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email })
-    });
+    try {
+      const res = await fetch(`${API_URL}/check-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (data.exists) {
-      alert("Email verified. Enter new password.");
+      if (data.exists) {
+        alert("Email verified. Enter new password.");
 
-      resetToken = data.token;
+        resetToken = data.token;
 
-      document.getElementById("newPasswordBox").style.display = "flex";
-      document.getElementById("confirmNewPasswordBox").style.display = "flex";
+        document.getElementById("newPasswordBox").style.display = "flex";
+        document.getElementById("confirmNewPasswordBox").style.display = "flex";
 
-      document.getElementById("sendResetBtn").innerText = "Update Password";
+        document.getElementById("sendResetBtn").innerText = "Update Password";
 
-      step = 2;
-    } else {
-      alert("Email not found");
+        step = 2;
+      } else {
+        alert("Email not found");
+      }
+    } catch (err) {
+      alert("Error verifying email. Please try again.");
+      console.error(err);
     }
 
     return;
   }
 
+  /* STEP 2: Update Password */
   const newPassword = document.getElementById("newPassword").value;
   const confirmPassword = document.getElementById("confirmNewPassword").value;
 
@@ -175,32 +229,37 @@ document.getElementById("sendResetBtn").addEventListener("click", async () => {
     return;
   }
 
-  const res = await fetch(`${API_URL}/reset-password`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email,
-      token: resetToken,
-      newPassword
-    })
-  });
+  try {
+    const res = await fetch(`${API_URL}/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        token: resetToken,
+        newPassword
+      })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  alert(data.message);
+    alert(data.message);
 
-  if (data.success) {
-    closeForgotModal();
+    if (data.success) {
+      closeForgotModal();
 
-    step = 1;
-    resetToken = null;
+      // Reset the form
+      step = 1;
+      resetToken = null;
 
-    document.getElementById("sendResetBtn").innerText = "Verify Email";
-
-    document.getElementById("newPasswordBox").style.display = "none";
-    document.getElementById("confirmNewPasswordBox").style.display = "none";
+      document.getElementById("sendResetBtn").innerText = "Verify Email";
+      document.getElementById("newPasswordBox").style.display = "none";
+      document.getElementById("confirmNewPasswordBox").style.display = "none";
+      document.querySelector("#forgotModal input[type='email']").value = "";
+      document.getElementById("newPassword").value = "";
+      document.getElementById("confirmNewPassword").value = "";
+    }
+  } catch (err) {
+    alert("Error resetting password. Please try again.");
+    console.error(err);
   }
 });
-
-setupPasswordToggle("toggleNewPassword", "newPassword");
-setupPasswordToggle("toggleConfirmNewPassword", "confirmNewPassword");
